@@ -63,6 +63,8 @@ makeBUGSdata = function(){
     }
   }
   
+  # I want to return every bit of data I KNOW about
+  # so all observations and all constants
   bugsData = list(
     numLoci = numLoci,
     numProfiles = numSamples,
