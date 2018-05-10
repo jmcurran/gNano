@@ -37,7 +37,7 @@ model{
       for(allele in 1:2){
         E[c, locus, allele] = T[c] * A[c, locus] * D[c, allele_to_fluorophore[Allele[c,locus, allele]]] * X[c,locus,allele]
         #model observed heights
-        P[c, locus, allele] ~ dlnorm(ln(E[c, l, a]), sqrt(Var[c]))
+        P[c, locus, allele] ~ dlnorm(ln(E[c, loucs, allele]), sqrt(Var[c]))
       }
     }
   }

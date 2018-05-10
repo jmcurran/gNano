@@ -1,0 +1,888 @@
+
+#input directory
+inputDir <- "D:\\students\\2018 - Catherine Hopkins\\"
+#save directory
+saveDir <- inputDir
+
+#reads in file
+RawData <- read.csv(file=paste(inputDir,"CH_GNano_ForR.csv",sep=""),head=TRUE,sep=",")
+
+#array of locus names
+LocusNames <- c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")
+NumberLoci <- length(LocusNames)
+
+#Number of samples
+NumberSamples <-  max(RawData[[2]])
+
+#Dye names
+DyeNames <- c("A", "G", "C", "T")
+#number of dyes
+NumberDyes <- length(DyeNames)
+#dye colours
+DyeColours <- c("green", "blue", "black", "red")
+
+#heights formatted into array [sample][locus][allele] 
+profileData <- array(data=NA, dim=c(NumberSamples, NumberLoci, 2))
+
+#dyes formatted into array [sample][locus][allele] 
+profileDyes <- array(data=NA, dim=c(NumberSamples, NumberLoci, 2))
+
+#homozygous formatted into array [sample][locus]
+profileHomozygote <- array(data=NA, dim=c(NumberSamples, NumberLoci))
+
+#size of the raw data set
+rawDataLength <- length(RawData[[1]])
+
+for (rawDataRow in 1:rawDataLength){
+	#capturing data from rawData
+	rawDataProfile <- RawData[rawDataRow,2]
+	rawDataLocus <- RawData[rawDataRow,4]
+	rawDataDye1 <- RawData[rawDataRow,7]
+	rawDataDye2 <- RawData[rawDataRow,9]
+	rawDataAlleleHeight1 <- RawData[rawDataRow,11]
+	rawDataAlleleHeight2 <- RawData[rawDataRow,13]
+
+	#determines if homozygous
+	rawDataAllele1 <- as.character(RawData[rawDataRow,10])
+	rawDataAllele2 <- as.character(RawData[rawDataRow,12])
+	if (rawDataAllele1 == rawDataAllele2){
+		profileHomozygote[rawDataProfile, rawDataLocus] = TRUE
+	}
+	else {
+		profileHomozygote[rawDataProfile, rawDataLocus] = FALSE
+	}
+
+	#writing heights to multi-dimensional height array
+	profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
+	if(profileHomozygote[rawDataProfile, rawDataLocus] == FALSE){
+		profileData[rawDataProfile, rawDataLocus, 2] = rawDataAlleleHeight2
+	}
+
+	#writing dyes to multi-dimensional height array
+	profileDyes[rawDataProfile, rawDataLocus, 1] = rawDataDye1
+	if(profileHomozygote[rawDataProfile, rawDataLocus] == FALSE){
+		profileDyes[rawDataProfile, rawDataLocus, 2] = rawDataDye2
+	}
+}
+
+
+
+
+#functions
+Calculate_E_for_profile <- function(f_NumberLoci, f_T, f_A, f_D, f_profileDyes, f_profileHomozygote, f_profile){
+	E_temp <- array(data=NA, dim=c(f_NumberLoci, 2))
+	for (locus in 1:f_NumberLoci){
+		if (f_profileDyes[f_profile,locus,1]>0){
+			#expected height 1
+			E_temp[locus, 1] = f_T*f_A[locus]*f_D[f_profileDyes[f_profile,locus,1]]
+			#expected height 2 (if not homozygous)
+			if (f_profileHomozygote[f_profile, locus] == TRUE){
+				E_temp[locus, 1] = E_temp[locus, 1] * 2
+			}
+			else {
+				E_temp[locus, 2] = f_T*f_A[locus]*f_D[f_profileDyes[f_profile,locus,2]]
+			}
+		}
+	}
+	return(E_temp)
+}
+
+
+prob_O_given_E <- function(f_O, f_E, f_Var){
+	return_p <- dlnorm(f_O, log(f_E), sqrt(f_Var))
+	return(return_p)
+}
+
+a_prior <- function(x, mean, variance){
+	return_p <- dlnorm(x, log(mean), sqrt(variance))
+	return(return_p)
+}
+
+d_prior <- function(x, mean, variance){
+	return_p <- dlnorm(x, log(mean), sqrt(variance))
+	return(return_p)
+}
+
+T_prior <- function(){
+	return_p <- 1/30000
+	return(return_p)
+}
+
+
+
+Calculate_p_for_profile <- function(f_profileData, f_E, f_NumberLoci, f_T, f_A, f_D, f_lambda, f_D_mu, f_D_sigma, f_A_mu, f_A_sigma, f_profile, f_NumberDyes){
+	#probability to return (on log scale)
+	p <- 0
+	#calculate the O and E values first
+	for (locus in 1:f_NumberLoci){
+		#allele 1
+		if (f_profileData[f_profile,locus,1] > 0 && !is.na(f_profileData[f_profile,locus,1])){
+			p <- p + log10(prob_O_given_E(f_profileData[f_profile,locus,1], f_E[locus,1], f_lambda/f_T))
+		}
+		if (profileData[profile,locus,2] > 0 && !is.na(profileData[profile,locus,2])){
+			p <- p + log10(prob_O_given_E(f_profileData[f_profile,locus,2], f_E[locus,2], f_lambda/f_T))
+		}
+	}
+	#now apply priors for D and F
+	for (locus in 1:f_NumberLoci){
+		p <- p + log10(a_prior(f_A[locus], f_A_mu[locus], f_A_sigma[locus]))
+	}
+	for (dye in 1:f_NumberDyes){
+		p <- p + log10(d_prior(f_D[dye], f_D_mu[dye], f_D_sigma[dye]))
+	}
+	#T prior
+	p <- p + log10(T_prior())
+	return(p)
+}
+
+
+ParameterValuesLegal <- function(f_T, f_A, f_D){
+	return_value <- TRUE
+	if (f_T < 0 || f_T > 30000) {
+		return_value <- FALSE
+	}
+	for (locus in 1:NumberLoci){
+		if(f_A[locus] < 0.1 || f_A[locus] > 10){
+			return_value <- FALSE
+		}
+	}
+	for (dye in 1:NumberDyes){
+		if(f_D[dye] < 0.1 || f_D[dye] > 10){
+			return_value <- FALSE
+		} 
+	}
+	return(return_value)
+}
+
+MH <- function(f_proposed, f_current){
+	accept_model <- TRUE
+	if (is.finite(f_proposed)){
+		if (f_proposed < f_current){
+			randomNumber <- runif(1)
+			if (f_proposed - f_current < log10(randomNumber)){
+				accept_model <- FALSE
+			}
+		}
+	}
+	else { #proposed value is not finite (NaN, infinity or -infinity)
+		accept_model <- FALSE
+	}
+	return(accept_model)
+}
+
+FixAGeoMean <- function(f_A, f_NumberElements){
+	product <- 1
+	return_value <- f_A
+	#calculates the product
+for (locus in 1:f_NumberElements){
+	product <- product*f_A[locus]	
+	}
+	#adjusts values
+for (locus in 1:f_NumberElements){
+	return_value[locus] <- f_A[locus]*(product^(-1/f_NumberElements))
+	}
+	return(return_value)
+}
+
+
+calculate_V_probabilities <- function(f_lambda, f_D_mu, f_D_sigma, f_A_mu, f_A_sigma){
+	return_value <- 0
+	return_value <- return_value + log10(lambda_prior(f_lambda))
+	for (dye in 1:NumberDyes){
+		return_value <- return_value + log10(D_mu_prior(f_D_mu[dye]))
+		return_value <- return_value + log10(D_sigma_prior(f_D_sigma[dye]))
+	}
+	for (locus in 1:NumberLoci){
+		return_value <- return_value + log10(A_mu_prior(f_A_mu[locus]))
+		return_value <- return_value + log10(A_sigma_prior(f_A_sigma[locus]))
+	}
+	return(return_value)
+}
+
+lambda_prior <- function(value){
+	return_p <- 1/100
+	return(return_p)
+}
+
+D_mu_prior <- function(value){
+	return_p <- 1/(10-0.1)
+	return(return_p)
+}
+
+D_sigma_prior <- function(value){
+	return_p <- 1/(1-0.01)
+	return(return_p)
+}
+
+A_mu_prior <- function(value){
+	return_p <- 1/(10-0.1)
+	return(return_p)
+}
+
+A_sigma_prior <- function(value){
+	return_p <- 1/(1-0.01)
+	return(return_p)
+}
+
+
+VarianceParameterValuesLegal <- function(f_lambda_proposed, f_A_mu_proposed, f_A_sigma_proposed, f_D_mu_proposed, f_D_sigma_proposed){
+
+return_value <- TRUE
+	if (f_lambda_proposed <= 0 || f_lambda_proposed > 100) {
+		return_value <- FALSE
+	}
+	for (locus in 1:NumberLoci){
+		if(f_A_mu_proposed[locus] < 0.1 || f_A_mu_proposed[locus] > 10){
+			return_value <- FALSE
+		}
+		if(f_A_sigma_proposed[locus] < 0.001 || f_A_sigma_proposed[locus] > 1){
+			return_value <- FALSE
+		}
+	}
+	for (dye in 1:NumberDyes){
+		if(f_D_mu_proposed[dye] < 0.1 || f_D_mu_proposed[dye] > 10){
+			return_value <- FALSE
+		} 
+		if(f_D_sigma_proposed[dye] < 0.001 || f_D_sigma_proposed[dye] > 1){
+			return_value <- FALSE
+		} 
+	}
+	return(return_value)
+
+}
+
+
+
+
+
+#sets up variables for MCMC
+
+#template values
+T <- rep(1000, NumberSamples)
+#initliase to sensible values
+for (profile in 1:NumberSamples){
+	T[profile] <- sum(profileData[profile,,], na.rm=TRUE)/(2*NumberLoci)
+}
+
+#amp efficiency values (all start at one)
+A <- array(1, dim=c(NumberSamples, NumberLoci))
+
+#A hyper-parameters
+A_mu <- array(1,dim=c(NumberLoci))
+A_sigma <- array(0.1,dim=c(NumberLoci))
+
+#Dye amp effect
+D <- array(1, dim=c(NumberSamples, NumberDyes))
+
+#D hyper-parameters
+D_mu <- array(1,dim=c(NumberDyes))
+D_sigma <- array(0.1,dim=c(NumberDyes))
+
+#peak height variance parameter
+lambda <- 50
+
+#RWSD values
+RWSD_T <- 1
+RWSD_D <- 0.01
+RWSD_D_mu <- 0.01
+RWSD_D_sigma <- 0.01
+RWSD_A <- 0.01
+RWSD_A_mu <- 0.01
+RWSD_A_sigma <- 0.01
+RWSD_lamba <- 0.1
+
+#choose the final step size as proportion of original step size
+final_step_proportion <- 0.01
+#choose component loop iteration that the step down in RSWD will stop
+step_down_stops_proportion <- 0.5
+
+
+
+#number of iterations in initial loop
+TotalMCMCiterations <- 10000
+
+#p_value for iteration - starts at really low value
+p_current <- array(-1000000,dim=c(NumberSamples))
+#E array
+E <- array(0, dim=c(NumberSamples, NumberLoci,2))
+
+component_loops <- 100000
+
+#the proportion that the RWSD will decrease at each iteration
+step_down_stops_iteration <- round(component_loops*step_down_stops_proportion, 0)
+RWSD_stepdown <- final_step_proportion^(1/step_down_stops_iteration)
+
+
+#arrays to capture variance values
+lambda_capture <- array(0,dim=c(TotalMCMCiterations + component_loops))
+D_mu_capture <- array(0,dim=c(TotalMCMCiterations + component_loops, NumberDyes))
+D_sigma_capture <- array(0,dim=c(TotalMCMCiterations + component_loops, NumberDyes))
+A_mu_capture <- array(0,dim=c(TotalMCMCiterations + component_loops, NumberLoci))
+A_sigma_capture <- array(0,dim=c(TotalMCMCiterations + component_loops, NumberLoci))
+p_total_capture <- array(0,dim=c(TotalMCMCiterations + component_loops))
+
+
+#arrays to capture mass values
+D_capture <- array(0,dim=c(NumberSamples, TotalMCMCiterations + component_loops, NumberDyes))
+T_capture <- array(0,dim=c(NumberSamples, TotalMCMCiterations + component_loops))
+A_capture <- array(0,dim=c(NumberSamples, TotalMCMCiterations + component_loops, NumberLoci))
+p_capture <- array(0,dim=c(NumberSamples, TotalMCMCiterations + component_loops))
+
+#variable to hold the position the data is captured in
+data_capture_counter <- 0
+
+#loops through component 1 (varying M and holding V constant) and component 2 (varying V and holding M constant)
+for (component in 1:component_loops){
+
+	#MCMC across samples
+	for (profile in 1:NumberSamples){
+		#MCMC for one sample
+		for (MCMCiteration in 1:TotalMCMCiterations){
+			#boolean that holds accept or reject status
+			accept_proposal <- TRUE
+	
+			# STEP 1 - propose new values
+			#T value
+			T_proposed <- T[profile] + RWSD_T*rnorm(1)
+			#A values
+			A_proposed <- array(1,dim=c(NumberLoci))
+			for (locus in 1:NumberLoci){
+				A_proposed[locus] <- A[profile, locus] + RWSD_A*rnorm(1)
+			}
+			A_proposed <- FixAGeoMean(A_proposed, NumberLoci) #sets geometric mean to 1
+			#D values
+			D_proposed <- array(1,dim=c(NumberDyes))
+			for (dye in 1:NumberDyes){
+				D_proposed[dye] <- D[profile, dye] + RWSD_D*rnorm(1)
+			}
+			D_proposed <- FixAGeoMean(D_proposed, NumberDyes)
+	
+			# STEP 2 - test for illegal parameter values
+			legal_proposed <- ParameterValuesLegal(T_proposed, A_proposed, D_proposed)
+		
+			if(legal_proposed == TRUE){
+				# STEP 3 - generate expected heights
+				E_proposed <- Calculate_E_for_profile(NumberLoci, T_proposed, A_proposed, D_proposed, profileDyes, profileHomozygote, profile)
+				
+				#STEP 4 - calculate density
+				p_proposed <- Calculate_p_for_profile(profileData, E_proposed, NumberLoci, T_proposed, A_proposed, D_proposed, lambda, D_mu, D_sigma, A_mu, A_sigma, profile, NumberDyes)
+	
+				#STEP 5 - accept or reject proposed values
+				MHacceptModel <- MH(p_proposed, p_current[profile])
+	
+				#STEP 6 - copy over new values (or not)
+				if (MHacceptModel == TRUE){
+					T[profile] <- T_proposed
+					D[profile,] <- D_proposed
+					A[profile,] <- A_proposed
+					p_current[profile] <- p_proposed
+					E[profile,,] <- E_proposed
+				}
+			}
+			#STEP 7 - capture iteration values
+			D_capture[profile, MCMCiteration + data_capture_counter,] <- D[profile,]
+			T_capture[profile, MCMCiteration + data_capture_counter] <- T[profile]
+			A_capture[profile, MCMCiteration + data_capture_counter,] <- A[profile,]
+			p_capture[profile, MCMCiteration + data_capture_counter] <- p_current[profile]
+		}
+		#spit out an indicator or progress (only on first pass)
+		if (component == 1){
+			print(paste("component loop ", component, " profile ", profile, " complete", sep=""))
+			flush.console()
+		}
+	}# next profile
+	
+	#now do a variance component MCMC
+	total_p_current <- sum(p_current)
+	#add in the variance probabilities
+	total_p_current <- total_p_current + calculate_V_probabilities(lambda, D_mu, D_sigma, A_mu, A_sigma)
+	
+	for (MCMCiteration in 1:TotalMCMCiterations){
+		accept_proposal <- TRUE
+		p_proposed <- 0
+	
+		# STEP 1 - propose new values
+		#lambda value
+		lambda_proposed <- lambda + RWSD_lamba*rnorm(1)
+		#A_mu & A_sigma
+		A_mu_proposed <- array(1,dim=c(NumberLoci))
+		A_sigma_proposed <- array(1,dim=c(NumberLoci))
+		for (locus in 1:NumberLoci){
+			A_mu_proposed[locus] <- A_mu[locus] + RWSD_A_mu*rnorm(1)
+			A_sigma_proposed[locus] <- A_sigma[locus] + RWSD_A_sigma*rnorm(1)
+		}
+		#D_mu and D_sigma
+		D_mu_proposed <- array(1,dim=c(NumberDyes))
+		D_sigma_proposed <- array(1,dim=c(NumberDyes))
+		for (dye in 1:NumberDyes){
+			D_mu_proposed[dye] <- D_mu[dye] + RWSD_D_mu*rnorm(1)
+			D_sigma_proposed[dye] <- D_sigma[dye] + RWSD_D_sigma*rnorm(1)
+		}
+		
+		# STEP 2 - test for illegal parameter values
+		legal_proposed <- VarianceParameterValuesLegal(lambda_proposed, A_mu_proposed, A_sigma_proposed, D_mu_proposed, D_sigma_proposed)
+	
+		if(legal_proposed == TRUE){
+			# STEP 3 - generate expected heights (already done in last MCMC)
+						
+			#STEP 4 - calculate density
+			p_proposed_per_profile <- array(0,dim=c(NumberSamples))
+			for (profile in 1:NumberSamples){
+				p_proposed_per_profile[profile] <- Calculate_p_for_profile(profileData, E[profile,,], NumberLoci, T[profile], A[profile,], D[profile,], lambda_proposed, D_mu_proposed, D_sigma_proposed, A_mu_proposed, A_sigma_proposed, profile, NumberDyes)
+			}
+			p_proposed <- sum(p_proposed_per_profile) + calculate_V_probabilities(lambda_proposed, D_mu_proposed, D_sigma_proposed, A_mu_proposed, A_sigma_proposed)
+		
+			#STEP 5 - accept or reject proposed values
+			MHacceptModel <- MH(p_proposed, total_p_current)
+			
+			#STEP 6 - copy over new values (or not)
+			if (MHacceptModel == TRUE){
+				lambda <- lambda_proposed
+				D_mu <- D_mu_proposed
+				D_sigma <- D_sigma_proposed
+				A_mu <- A_mu_proposed
+				A_sigma <- A_sigma_proposed
+				total_p_current <- p_proposed
+				p_current <- p_proposed_per_profile
+			}
+		}
+		#capture data
+		lambda_capture[MCMCiteration + data_capture_counter] <- lambda
+		D_mu_capture[MCMCiteration + data_capture_counter,] <- D_mu
+		D_sigma_capture[MCMCiteration + data_capture_counter,] <- D_sigma
+		A_mu_capture[MCMCiteration + data_capture_counter,] <- A_mu
+		A_sigma_capture[MCMCiteration + data_capture_counter,] <- A_sigma
+		p_total_capture[MCMCiteration + data_capture_counter] <- total_p_current
+		
+		#spit out an indicator or progress
+		if(MCMCiteration%%100 == 0 && component == 1){
+			print(paste("component loop ", component, " V component ", (100*MCMCiteration/TotalMCMCiterations), "% complete", sep=""))
+			flush.console()
+		}
+	}
+	#increment data capture counter
+	data_capture_counter <- data_capture_counter + TotalMCMCiterations
+
+	#now (after large initial run) change the number of iterations per loop to 1
+	TotalMCMCiterations <- 1
+
+	#loop indicator
+	if(component%%100 == 0){
+	print(paste("Analysis ", (100*component/component_loops), "% complete", sep=""))
+		flush.console()
+	}
+
+	#decrement RWSD by specified %
+	if (component < step_down_stops_iteration){
+		RWSD_T <- RWSD_T*RWSD_stepdown
+		RWSD_D <- RWSD_D*RWSD_stepdown
+		RWSD_D_mu <- RWSD_D_mu*RWSD_stepdown
+		RWSD_D_sigma <- RWSD_D_sigma*RWSD_stepdown
+		RWSD_A <- RWSD_A*RWSD_stepdown
+		RWSD_A_mu <- RWSD_A_mu*RWSD_stepdown
+		RWSD_A_sigma <- RWSD_A_sigma*RWSD_stepdown
+		RWSD_lamba <- RWSD_lamba*RWSD_stepdown
+	}
+
+} #end of component for loop
+
+
+
+#burn-in last 25% of component loops
+burnin <- TotalMCMCiterations + 0.75*component_loops
+endcapture <- TotalMCMCiterations + component_loops - 1
+
+
+#now create some graphs to see how the MCMC process went
+########## PLOT 1 - dataset probability over the MCMC ##########
+plot(p_total_capture[1:endcapture], type="l", xlab="iteration", ylab="p(O|M,V)p(M|V) for whole dataset")
+#saves plots
+dev.copy(jpeg, file=paste(saveDir, "Dataset_probability_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 2 - profile probabilities over the MCMC ##########
+color=rgb(0,0,0,alpha=0.5)
+plot(p_capture[1,1:endcapture], type="l", ylim=c(-650, -100), xlab="iteration", ylab="p(O|M,V)p(M|V) per profile", col=color)
+for (profile in 2:NumberSamples){
+	lines(p_capture[profile, 1:endcapture], ylim=c(-650, -100), col=color)
+}
+dev.copy(jpeg, file=paste(saveDir, "Per_profile_probability_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 3 - lambda over the MCMC ##########
+plot(lambda_capture[1:endcapture], type="l", xlab="iteration", ylab="lambda")
+dev.copy(jpeg, file=paste(saveDir, "lambda_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 4 - distribution of lambda after burnin ##########
+binwidth <- hist(lambda_capture[burnin:endcapture])$mids[2]-hist(lambda_capture[burnin:endcapture])$mids[1]
+hist(lambda_capture[burnin:endcapture], xlab="lambda", main=paste("lambda: N(", mean(lambda_capture[burnin:endcapture]), ",", sd(lambda_capture[burnin:endcapture]), ")",sep=""))
+plot_x <- seq(min(lambda_capture[burnin:endcapture]), max(lambda_capture[burnin:endcapture]), length=1000)
+lines(plot_x, binwidth*(endcapture - burnin)*dnorm(plot_x, mean(lambda_capture[burnin:endcapture]), sd(lambda_capture[burnin:endcapture])), col="red")
+dev.copy(jpeg, file=paste(saveDir, "Lambda_histogram.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 5 - amplification efficiencies means over the MCMC ##########
+plot(A_mu_capture[1:endcapture,1], type="l", ylim=c(0.3, 2), xlab="iteration", ylab="Locus amplification efficiency", xlim=c(1,(1.25*endcapture)))
+for (locus in 2:NumberLoci){
+	lines(A_mu_capture[1:endcapture,locus], ylim=c(0.3, 2), xlim=c(1,(1.25*endcapture)))
+}
+#set up labels
+x_label <- A_mu_capture[endcapture,]
+y_label <- paste(LocusNames, " - ", signif(x_label,3),sep=" ")
+legend("right", y_label[order(ordered(-x_label))], cex=0.7)
+dev.copy(jpeg, file=paste(saveDir, "Amp_efficiencies_MCMC.jpg", sep=""), height=3000, width=2000, res=300)
+dev.off()
+
+########## PLOT 5.5 - amplification efficiencies sigmas over the MCMC ##########
+plot(A_sigma_capture[1:endcapture,1], type="l", ylim=c(0, 1), xlab="iteration", ylab="Locus amplification efficiency variance", xlim=c(1,(1.25*endcapture)))
+for (locus in 2:NumberLoci){
+	lines(A_sigma_capture[1:endcapture,locus], ylim=c(0, 1), xlim=c(1,(1.25*endcapture)))
+}
+#set up labels
+x_label <- A_sigma_capture[endcapture,]
+y_label <- paste(LocusNames, " - ", signif(x_label,3),sep=" ")
+legend("right", y_label[order(ordered(-x_label))], cex=0.7)
+dev.copy(jpeg, file=paste(saveDir, "Amp_efficiencies_sigma_MCMC.jpg", sep=""), height=3000, width=2000, res=300)
+dev.off()
+
+
+
+########## PLOT 6 - dye effiencies means over the MCMC ##########
+plot(D_mu_capture[1:endcapture,1], type="l", ylim=c(0.3, 2), xlab="iteration", ylab="Dye amplification efficiency", xlim=c(1,(1.25*endcapture)))
+for (locus in 2:NumberDyes){
+	lines(D_mu_capture[1:endcapture,locus], ylim=c(0.3, 2), xlim=c(1,(1.25*endcapture)))
+}
+#set up labels
+x_label <- D_mu_capture[endcapture,]
+y_label <- paste(DyeNames, " - ", signif(x_label,3),sep=" ")
+legend("right", y_label[order(ordered(-x_label))])
+dev.copy(jpeg, file=paste(saveDir, "Dye_effects_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 6.5 - dye effiencies variances over the MCMC ##########
+plot(D_sigma_capture[1:endcapture,1], type="l", ylim=c(0, 0.1), xlab="iteration", ylab="Dye amplification efficiency variance", xlim=c(1,(1.25*endcapture)))
+for (locus in 2:NumberDyes){
+	lines(D_sigma_capture[1:endcapture,locus], ylim=c(0, 0.1), xlim=c(1,(1.25*endcapture)))
+}
+#set up labels
+x_label <- D_sigma_capture[endcapture,]
+y_label <- paste(DyeNames, " - ", signif(x_label,3),sep=" ")
+legend("right", y_label[order(ordered(-x_label))])
+dev.copy(jpeg, file=paste(saveDir, "Dye_effects_sigma_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 7 - locus amplification efficiency distributions##########
+simulated_curves <- 5000
+plot_x <- seq(0.01, 10, length=1000)
+color=rgb(0,0,0,alpha=0.01)
+for (locus in 1:NumberLoci){
+	#opens blank plot
+	plot(0,0, xlim=c(0, 4), ylim=c(0,4), xlab="Amplification effiency", ylab="", main = paste("locus ", LocusNames[locus], " amplification efficiency", sep=""))
+	#calculates mean and varaince of aplification efficiency mean
+	A_mu_mean <- mean(A_mu_capture[burnin:endcapture,locus])
+	A_mu_sigma <- sd(A_mu_capture[burnin:endcapture,locus])
+	#calculates mean and variance of aplification efficiency variance
+	A_sigma_mean <- mean(A_sigma_capture[burnin:endcapture,locus])
+	A_sigma_sigma <- sd(A_sigma_capture[burnin:endcapture,locus])
+	#randomly samples from mean and variance distributions 
+	for (randcurve in 1:simulated_curves){
+		random_A_mu <- rnorm(1, A_mu_mean, sqrt(A_mu_sigma))
+		random_A_sigma <- rnorm(1, A_sigma_mean, sqrt(A_sigma_sigma))
+		#draw LN
+		lines(plot_x, dlnorm(plot_x, log(random_A_mu), sqrt(random_A_sigma)), col=color, xlim=c(0, 4), ylim=c(0,4))
+	}
+	#plots mean values
+	lines(plot_x, dlnorm(plot_x, log(A_mu_mean), sqrt(A_sigma_mean)), col="red", xlim=c(0, 4), ylim=c(0,4))
+	#saves plots
+	dev.copy(jpeg, file=paste(saveDir, LocusNames[locus], " Amp efficiency.jpg", sep=""), height=2000, width=2000, res=300)
+	dev.off()
+}
+
+
+########## PLOT 8 - dye amplification efficiency distributions##########
+simulated_curves <- 5000
+plot_x <- seq(0.01, 10, length=1000)
+color=rgb(0,0,0,alpha=0.01)
+#opens blank plot
+plot(-1000,-1000, xlim=c(0, 2), ylim=c(0,7), xlab="Dye amplification effiency", ylab="", main = "")
+for (dye in 1:NumberDyes){
+	#color <- col2rgb(DyeColours[dye], alpha=0.01)
+	#calculates mean and varaince of aplification efficiency mean
+	D_mu_mean <- mean(D_mu_capture[burnin:endcapture,dye])
+	D_mu_sigma <- sd(D_mu_capture[burnin:endcapture,dye])
+	#calculates mean and variance of aplification efficiency variance
+	D_sigma_mean <- mean(D_sigma_capture[burnin:endcapture,dye])
+	D_sigma_sigma <- sd(D_sigma_capture[burnin:endcapture,dye])
+	#randomly samples from mean and variance distributions 
+	for (randcurve in 1:simulated_curves){
+		random_D_mu <- rnorm(1, D_mu_mean, sqrt(D_mu_sigma))
+		random_D_sigma <- rnorm(1, D_sigma_mean, sqrt(D_sigma_sigma))
+		#draw LN
+		lines(plot_x, dlnorm(plot_x, log(random_D_mu), sqrt(random_D_sigma)), col=color, xlim=c(0, 2), ylim=c(0,7))
+	}
+	#draw curve using mean value
+	lines(plot_x, dlnorm(plot_x, log(D_mu_mean), sqrt(D_sigma_mean)), col=DyeColours[dye], xlim=c(0, 2), ylim=c(0,7))
+}
+#saves plots
+dev.copy(jpeg, file=paste(saveDir, "Dye efficiency.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+
+########## PLOT 9 - Expected peak heights ##########
+#modelling peak heights
+mean_peak_height <- mean(profileData, na.rm=TRUE)
+peak_count <- sum(profileData>0, na.rm=TRUE)
+binwidth <- hist(profileData)$mids[2]-hist(profileData)$mids[1]
+hist(profileData, main="observed peak heights", xlab="peak height (rfu)", xlim=c(0,30000))
+plot_x <- seq(1,30000, length = 10000)
+plot_y <- dexp(plot_x, 1/mean_peak_height)
+lines(plot_x, binwidth*peak_count*plot_y, col="red")
+dev.copy(jpeg, file=paste(saveDir, "Observed_peak_heaights.jpg", sep=""), height=1500, width=3000, res=300)
+dev.off()
+
+
+###################   Model checks   #################
+
+
+
+########## PLOT 10 - expected and observed peak height variability ##########
+E_over_O <- E/profileData
+plot(-1000,-1000, xlim=c(0, 5000), ylim=c(0,4), xlab="Template", ylab="O/E", main = paste("Peak Height varibility", sep=""))
+for (sample in 1:NumberSamples){
+	points(seq(T[sample], length=length(E_over_O[sample,,])), E_over_O[sample,,], xlim=c(0, 5000), ylim=c(0,4), add=TRUE)
+}
+#now draw lines from analysis
+mean_lambda <- mean(lambda_capture[burnin:endcapture])
+plot_seq <- seq(1,5000, length=5000)
+lines(plot_seq , 10^(sqrt(1.96*mean_lambda/plot_seq)), col="red")
+lines(plot_seq , 10^(-sqrt(1.96*mean_lambda/plot_seq)), col="red")
+dev.copy(jpeg, file=paste(saveDir, "Peak_Height_Variability.jpg", sep=""), height=2000, width=2000, res=300)
+dev.off()
+
+
+########## PLOT 11 - expected and observed Heterozygote balance by dye ##########
+#divide first peak by second in all profiles and for all loci
+Hb <- profileData[,,1]/profileData[,,2]
+#need 6 box plots  A/C, A/G, A/T, C/G, C/T, G/T
+#number equivalent 1/3, 1/2, 1/4, 3/2, 3/4, 2/4
+combinations <- 6
+dye1 <- c(1, 1, 1, 3, 3, 2)
+dye2 <- c(3, 2, 4, 2, 4, 4)
+#now draws simulated vs expected ratios
+for (combo in 1:combinations){
+	dye1_dye2_observed <- Hb[(profileDyes[,,1]==dye1[combo] & profileDyes[,,2]==dye2[combo])]
+	dye1_mean <- mean(D_mu_capture[burnin:endcapture,dye1[combo]])
+	dye1_sigma <- sd(D_sigma_capture[burnin:endcapture,dye1[combo]])
+	dye1_simulated <- rlnorm(1000, log(dye1_mean), sqrt(dye1_sigma))
+	dye2_mean <- mean(D_mu_capture[burnin:endcapture,dye2[combo]])
+	dye2_sigma <- sd(D_sigma_capture[burnin:endcapture,dye2[combo]])
+	dye2_simulated <- rlnorm(1000, log(dye2_mean), sqrt(dye2_sigma))
+	#simulates peak height variability from stochastic effects (random peak between 500 and 5000 rfu)
+	peak1_variability <- array(1,dim=c(1000))
+	for (var in 1:1000){
+		#random peak height from observed peak heights, which are exponential, but above AT
+		peak <- max(50, rexp(1, 1/mean_peak_height))
+		peak1_variability[var] <- rlnorm(1, log(peak), sqrt(mean_lambda/peak))/rlnorm(1, log(peak), sqrt(mean_lambda/peak))
+	}
+	dye1_dye2_simulated <- peak1_variability*dye1_simulated/dye2_simulated
+	if (combo == 1){
+		boxplot(dye1_dye2_observed, at=1, xlim=c(1,combinations*2), ylim=c(0,4), main="observed and expected dye balance", xlab="", ylab="Ratio of Heights", col="red")
+	}
+	else { #just add
+		boxplot(dye1_dye2_observed, at=((combo-1)*2+1), xlim=c(1,combinations*2), ylim=c(0,4), col="red", add=TRUE)
+	}
+	boxplot(dye1_dye2_simulated, at=(combo*2), xlim=c(1,combinations*2), ylim=c(0,4), col="blue", add=TRUE)
+}
+axis(1, at=1:(2*combinations), labels=c("A/C(O)", "A/C(S)", "A/G(O)", "A/G(S)", "A/T(O)", "A/T(S)", "C/G(O)", "C/G(S)", "C/T(O)", "C/T(S)", "G/T(O)", "G/T(S)"))
+dev.copy(jpeg, file=paste(saveDir, "Dye_amplification_Efficiency.jpg", sep=""), height=2000, width=6000, res=300)
+dev.off()
+
+
+
+########## PLOT 12 - Peak height per locus (relatve to avergae in profile) ##########
+Av_peakheight_per_profile <- apply(profileData, c(1), mean, na.rm=TRUE)
+scaled_O  <- array(data=NA, dim=c(NumberSamples, NumberLoci, 2))
+#add across peaks of heterozygote
+scaled_O  <- apply(profileData, c(1, 2), sum, na.rm=TRUE)
+for (profile in 1:NumberSamples){
+	scaled_O[profile,] <- scaled_O[profile,]/Av_peakheight_per_profile[profile]
+}
+#plot as boxplot
+for (locus in 1:NumberLoci){
+	if (locus == 1){
+		boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), main="observed and expected lous amp balance", xlab="", ylab="ratio peak heights / average", col="red")
+	}
+	else {
+		boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="red", add=TRUE)
+	}
+}
+#now the simulated values
+random_profile <- array(0, dim=c(1000, NumberLoci))
+for (var in 1:1000){
+	#choose template
+	random_template <- max(50, rexp(1, 1/mean_peak_height))
+	for (locus in 1:NumberLoci){
+		A_mu_means <- mean(A_mu_capture[burnin:endcapture,locus])
+		A_sigma_means <- mean(A_sigma_capture[burnin:endcapture,locus])
+		#random peak height variability value
+		peak_variability <- rlnorm(1, log(random_template), sqrt(mean_lambda/random_template))
+		#random locus amp efficiency value
+		random_locus_amp <- rlnorm(1, log(A_mu_means), sqrt(A_sigma_means))
+		random_profile[var,locus] <- peak_variability*random_locus_amp
+	}
+	#scale
+	random_profile[var,] <- random_profile[var,]/mean(random_profile[var,])
+}
+#plot simulated data
+for (locus in 1:NumberLoci){
+	boxplot(random_profile[,locus], at=(2*(locus-1)+1), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="blue", add=TRUE)
+}
+axis(1, at=seq(1,(2*NumberLoci-1), length = NumberLoci), labels=LocusNames)
+dev.copy(jpeg, file=paste(saveDir, "Locus_amplification_Efficiency.jpg", sep=""), height=2000, width=6000, res=300)
+dev.off()
+
+
+
+#GR converence on diagnostics
+library(coda)
+
+########## PLOT 13 - Gelman Rubin convergence diagnostics for individual profile probabities ##########
+#array to hold GR values
+profile_p_GR <- array(data=NA, dim=c(NumberSamples))
+for (profile in 1:NumberSamples){
+	length_of_array <- signif((endcapture - burnin)/4, 0)
+	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+	for (quarter in 1:4){
+		start_position <- (quarter-1)*length_of_array + burnin
+		end_position <- quarter*length_of_array + burnin - 1
+		p_cap_quarters[quarter,] <- p_capture[profile,start_position:end_position]
+	}
+	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+	GR <- gelman.diag(variable_as_mcmc_list)
+	profile_p_GR[profile] <- GR[[1]][1]
+}
+#graph GR values
+plot(profile_p_GR, main="profile GR", xlab="Profile", ylab="GR")
+abline(h=1.2)
+dev.copy(jpeg, file=paste(saveDir, "Profile_GR.jpg", sep=""), height=2000, width=6000, res=300)
+dev.off()
+
+
+########## PLOT 14 - Gelman Rubin convergence diagnostics for other model parameters ##########
+#values for graph
+number_points <- 1 + 1 + NumberDyes + NumberDyes + NumberLoci + NumberLoci
+graph_values <- array(data=NA, dim=c(number_points))
+graph_labels <- array(data=NA, dim=c(number_points))
+graph_counter <- 1
+#p_total
+length_of_array <- signif((endcapture - burnin)/4, 0)
+p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+for (quarter in 1:4){
+	start_position <- (quarter-1)*length_of_array + burnin
+	end_position <- quarter*length_of_array + burnin - 1
+	p_cap_quarters[quarter,] <- p_total_capture[start_position:end_position]
+}
+variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+GR <- gelman.diag(variable_as_mcmc_list)
+GR_p_total <- GR[[1]][1]
+graph_values[graph_counter] <- GR_p_total
+graph_labels[graph_counter] <- "dataset probability"
+graph_counter <- graph_counter + 1
+#lambda
+length_of_array <- signif((endcapture - burnin)/4, 0)
+p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+for (quarter in 1:4){
+	start_position <- (quarter-1)*length_of_array + burnin
+	end_position <- quarter*length_of_array + burnin - 1
+	p_cap_quarters[quarter,] <- lambda_capture[start_position:end_position]
+}
+variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+GR <- gelman.diag(variable_as_mcmc_list)
+GR_lambda <- GR[[1]][1]
+graph_values[graph_counter] <- GR_lambda
+graph_labels[graph_counter] <- "lambda"
+graph_counter <- graph_counter + 1
+#D mu
+GR_D_mu <- array(data=NA, dim=c(NumberDyes))
+for (dye in 1:NumberDyes){
+	length_of_array <- signif((endcapture - burnin)/4, 0)
+	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+	for (quarter in 1:4){
+		start_position <- (quarter-1)*length_of_array + burnin
+		end_position <- quarter*length_of_array + burnin - 1
+		p_cap_quarters[quarter,] <- D_mu_capture[start_position:end_position,dye]
+	}
+	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+	GR <- gelman.diag(variable_as_mcmc_list)
+	GR_D_mu[dye] <- GR[[1]][1]
+	graph_values[graph_counter] <- GR_D_mu[dye]
+	graph_labels[graph_counter] <- paste("Dye amp mean (", DyeNames[dye], ")", sep="")
+	graph_counter <- graph_counter + 1
+}
+#D sigma
+GR_D_sigma <- array(data=NA, dim=c(NumberDyes))
+for (dye in 1:NumberDyes){
+	length_of_array <- signif((endcapture - burnin)/4, 0)
+	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+	for (quarter in 1:4){
+		start_position <- (quarter-1)*length_of_array + burnin
+		end_position <- quarter*length_of_array + burnin - 1
+		p_cap_quarters[quarter,] <- D_sigma_capture[start_position:end_position,dye]
+	}
+	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+	GR <- gelman.diag(variable_as_mcmc_list)
+	GR_D_sigma[dye] <- GR[[1]][1]
+	graph_values[graph_counter] <- GR_D_sigma[dye]
+	graph_labels[graph_counter] <- paste("Dye amp var (", DyeNames[dye], ")", sep="")
+	graph_counter <- graph_counter + 1
+}
+#A mu
+GR_A_mu <- array(data=NA, dim=c(NumberLoci))
+for (locus in 1:NumberLoci){
+	length_of_array <- signif((endcapture - burnin)/4, 0)
+	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+	for (quarter in 1:4){
+		start_position <- (quarter-1)*length_of_array + burnin
+		end_position <- quarter*length_of_array + burnin - 1
+		p_cap_quarters[quarter,] <- A_mu_capture[start_position:end_position,locus]
+	}
+	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+	GR <- gelman.diag(variable_as_mcmc_list)
+	GR_A_mu[locus] <- GR[[1]][1]
+	graph_values[graph_counter] <- GR_A_mu[locus]
+	graph_labels[graph_counter] <- paste("Locus amp mean (", LocusNames[locus], ")", sep="")
+	graph_counter <- graph_counter + 1
+}
+#A sigma
+GR_A_sigma <- array(data=NA, dim=c(NumberLoci))
+for (locus in 1:NumberLoci){
+	length_of_array <- signif((endcapture - burnin)/4, 0)
+	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+	for (quarter in 1:4){
+		start_position <- (quarter-1)*length_of_array + burnin
+		end_position <- quarter*length_of_array + burnin - 1
+		p_cap_quarters[quarter,] <- A_sigma_capture[start_position:end_position,locus]
+	}
+	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+	GR <- gelman.diag(variable_as_mcmc_list)
+	GR_A_sigma[locus] <- GR[[1]][1]
+	graph_values[graph_counter] <- GR_A_sigma[locus]
+	graph_labels[graph_counter] <- paste("Locus amp var (", LocusNames[locus], ")", sep="")
+	graph_counter <- graph_counter + 1
+}
+#now draw the graph
+plot (graph_values, main="Gelman Rubin convergence diagnostic", xlab="Parameter", ylab="GR value", xaxt='n', ylim=c(0,12))
+abline(h=1.2, col="grey")
+text(seq(1,(graph_counter-1), length=(graph_counter-1)), (graph_values+1.5), labels=graph_labels, pos=3, cex=0.7, srt=90)
+dev.copy(jpeg, file=paste(saveDir, "parameter_GR.jpg", sep=""), height=2000, width=6000, res=300)
+dev.off()
+
+#################### END PLOTS ################################
