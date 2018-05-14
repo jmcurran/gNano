@@ -29,7 +29,7 @@ makeBUGSdata = function(){
   profileDyes = array(data = NA, dim=c(numSamples, numLoci, 2))
   
   #homozygous formatted into array [sample][locus]
-  profileHomozygote = array(data = NA, dim=c(numSamples, numLoci))
+  profileHomozygote = X = matrix(NA, dim=c(numSamples, numLoci))
   
   #size of the raw data set
   rawDataLength = nrow(rawData)
@@ -49,6 +49,7 @@ makeBUGSdata = function(){
     
     ## This will evaluate as TRUE or FALSE so you don't need the if
     profileHomozygote[rawDataProfile, rawDataLocus]  = rawDataAllele1 == rawDataAllele2
+    X[rawDataProfile, rawDataLocus] = if(rawDataAllele1 == rawDataAllele2){2}else{1}
     
     #writing heights to multi-dimensional height array
     profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
@@ -69,7 +70,7 @@ makeBUGSdata = function(){
     numLoci = numLoci,
     numProfiles = numSamples,
     P = profileData, 
-    
+    X = X,
     
   )
 }
