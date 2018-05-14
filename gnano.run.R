@@ -29,7 +29,7 @@ makeBUGSdata = function(){
   profileDyes = array(data = NA, dim=c(numSamples, numLoci, 2))
   
   #homozygous formatted into array [sample][locus]
-  profileHomozygote = X = matrix(NA, dim=c(numSamples, numLoci))
+  profileHomozygote = X = matrix(NA, nrow = numSamples, ncol = numLoci)
   
   #size of the raw data set
   rawDataLength = nrow(rawData)
@@ -49,7 +49,7 @@ makeBUGSdata = function(){
     
     ## This will evaluate as TRUE or FALSE so you don't need the if
     profileHomozygote[rawDataProfile, rawDataLocus]  = rawDataAllele1 == rawDataAllele2
-    X[rawDataProfile, rawDataLocus] = if(rawDataAllele1 == rawDataAllele2){2}else{1}
+    X[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){2}else{1}
     
     #writing heights to multi-dimensional height array
     profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
@@ -69,8 +69,17 @@ makeBUGSdata = function(){
   bugsData = list(
     numLoci = numLoci,
     numProfiles = numSamples,
+    numDyes = numDyes,
+    S = 30000,
+    profileDyes = profileDyes,
     P = profileData, 
     X = X,
-    
+    alleles_at_locus = X
   )
 }
+
+library(rjags)
+bugsData = makeBUGSdata()
+bugsFile = here("gnano.bugs.R")
+
+sim = jags.model(file = bugsFile, data = bugsData)
