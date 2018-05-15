@@ -37,7 +37,7 @@ makeBUGSdata = function(){
   
   sampleNames = rawData %>% 
     select(Sample) %>% 
-    unique() %>% 
+    unique() #%>% 
   
   
   
@@ -74,6 +74,29 @@ makeBUGSdata = function(){
     profileDyes[rawDataProfile, rawDataLocus, 1] = if(rawDataDye1 %in% 1:4){rawDataDye1}else{NA}
     if(!profileHomozygote[rawDataProfile, rawDataLocus]){
       profileDyes[rawDataProfile, rawDataLocus, 2] = if(rawDataDye2 %in% 1:4){rawDataDye2}else{NA}
+    }
+  }
+  
+  if (FALSE) {
+    str(profileDyes)
+    sum(is.na(profileDyes))
+    mean(is.na(profileDyes))
+    
+    all(is.na(profileData) == is.na(profileDyes))
+    #dim = c(numSamples, numLoci, 2)
+    # remove samples with BOTH NA (one NA is homozygote)
+    rm_is <- c() # stupid, but easy and fast enough for this
+    for (i in seq_len(dim(profileData)[1])) { # loop over profiles
+      #i <- 1
+      if (any(apply(profileData[i,,], 1, function(x) all(is.na(x))))) {
+        rm_is <- c(rm_is, i)
+      }
+    }
+    rm_is
+    length(rm_is)
+    if (length(rm_is) > 0L) {
+      profileData <- profileData[-rm_is,,]
+      profileDyes <- profileDyes[-rm_is,,]
     }
   }
   
