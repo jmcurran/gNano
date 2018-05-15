@@ -29,7 +29,17 @@ makeBUGSdata = function(){
   profileDyes = array(data = NA, dim=c(numSamples, numLoci, 2))
   
   #homozygous formatted into array [sample][locus]
-  profileHomozygote = X = matrix(NA, nrow = numSamples, ncol = numLoci)
+  profileHomozygote = X = alleles_at_locus =  matrix(NA, nrow = numSamples, ncol = numLoci)
+  
+  
+  library(sqldf)
+  library(tidyverse)
+  
+  sampleNames = rawData %>% 
+    select(Sample) %>% 
+    unique() %>% 
+  
+  
   
   #size of the raw data set
   rawDataLength = nrow(rawData)
@@ -50,6 +60,9 @@ makeBUGSdata = function(){
     ## This will evaluate as TRUE or FALSE so you don't need the if
     profileHomozygote[rawDataProfile, rawDataLocus]  = rawDataAllele1 == rawDataAllele2
     X[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){2}else{1}
+    if(rawDataAllele1 %in% dyeNames){
+      alleles_at_locus[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){1}else{2}
+    }
     
     #writing heights to multi-dimensional height array
     profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
@@ -58,9 +71,9 @@ makeBUGSdata = function(){
     }
     
     #writing dyes to multi-dimensional height array
-    profileDyes[rawDataProfile, rawDataLocus, 1] = rawDataDye1
+    profileDyes[rawDataProfile, rawDataLocus, 1] = if(rawDataDye1 %in% 1:4){rawDataDye1}else{NA}
     if(!profileHomozygote[rawDataProfile, rawDataLocus]){
-      profileDyes[rawDataProfile, rawDataLocus, 2] = rawDataDye2
+      profileDyes[rawDataProfile, rawDataLocus, 2] = if(rawDataDye2 %in% 1:4){rawDataDye2}else{NA}
     }
   }
   
@@ -74,7 +87,7 @@ makeBUGSdata = function(){
     profileDyes = profileDyes,
     P = profileData, 
     X = X,
-    alleles_at_locus = X
+    alleles_at_locus = alleles_at_locus
   )
 }
 

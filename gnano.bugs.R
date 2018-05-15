@@ -35,10 +35,10 @@ model{
     
     #generate expected heights for each allele at each locus in each profile
     for(locus in 1:numLoci){ 
-      for(allele in 1: alleles_at_locus[c,locus]){
+      for(allele in 1:alleles_at_locus[c,locus]){
         E[c, locus, allele] = T[c] * A[c, locus] * D[c, profileDyes[c, locus, allele]] * X[locus, allele]
         #model observed heights
-        P[c, locus, allele] ~ dlnorm(ln(E[c, locus, allele]), sqrt(Var[c]))
+        P[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), sqrt(Var[c]))
       }
     }
   }
