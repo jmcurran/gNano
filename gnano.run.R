@@ -23,7 +23,7 @@ makeBUGSdata = function(){
   dyeColours = c("green", "blue", "black", "red")
   
   #heights formatted into array [sample][locus][allele] 
-  profileData = array(data = NA, dim =c(numSamples, numLoci, 2))
+  profileData = pred = array(data = NA, dim =c(numSamples, numLoci, 2))
   
   #dyes formatted into array [sample][locus][allele] 
   profileDyes = array(data = NA, dim=c(numSamples, numLoci, 2))
@@ -114,6 +114,7 @@ makeBUGSdata = function(){
     S = 30000,
     profileDyes = profileDyes,
     P = profileData, 
+    pred = pred, 
     X = X,
     alleles_at_locus = alleles_at_locus
   )
@@ -131,9 +132,9 @@ system.time(update(sim, 100000))
 
 ## What parameters are we interested?
 
-parameters = c("lambda", "mu.dye")
+parameters = c("pred")
 sim.sample = coda.samples(model = sim, variable.names = parameters,
                           n.iter = 50000, thin = 50)
 stats = summary(sim.sample)
-stats
-plot(sim.sample)
+#stats
+#plot(sim.sample)

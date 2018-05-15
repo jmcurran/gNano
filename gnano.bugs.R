@@ -40,6 +40,7 @@ model{
         E[c, locus, allele] = T[c] * A[c, locus] * D[c, profileDyes[c, locus, allele]] * X[locus, allele]
         #model observed heights
         P[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])
+        pred[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])
       }
     }
   }
