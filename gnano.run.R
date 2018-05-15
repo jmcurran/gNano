@@ -32,13 +32,13 @@ makeBUGSdata = function(){
   profileHomozygote = X = alleles_at_locus =  matrix(NA, nrow = numSamples, ncol = numLoci)
   
   
-  library(sqldf)
-  library(tidyverse)
-  
-  sampleNames = rawData %>% 
-    select(Sample) %>% 
-    unique() #%>% 
-  
+  # library(sqldf)
+  # library(tidyverse)
+  # 
+  # sampleNames = rawData %>% 
+  #   select(Sample) %>% 
+  #   unique() #%>% 
+  # 
   
   
   #size of the raw data set
@@ -77,7 +77,8 @@ makeBUGSdata = function(){
     }
   }
   
-  if (FALSE) {
+  ## Added by Mikkel
+  if (TRUE) {
     str(profileDyes)
     sum(is.na(profileDyes))
     mean(is.na(profileDyes))
@@ -122,4 +123,17 @@ library(rjags)
 bugsData = makeBUGSdata()
 bugsFile = here("gnano.bugs.R")
 
+## compile the model
 sim = jags.model(file = bugsFile, data = bugsData)
+
+## do a bit of burn in - no idea what is sufficient at this point
+system.time(update(sim, 10000))
+
+## What parameters are we interested?
+
+parameters = "lambda"
+sim.sample = coda.samples(model = sim, variable.names = parameters,
+                          n.iter = 1000)
+stats = summary(sim.sample)
+stats
+
