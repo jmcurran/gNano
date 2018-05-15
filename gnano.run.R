@@ -127,13 +127,13 @@ bugsFile = here("gnano.bugs.R")
 sim = jags.model(file = bugsFile, data = bugsData)
 
 ## do a bit of burn in - no idea what is sufficient at this point
-system.time(update(sim, 10000))
+system.time(update(sim, 100000))
 
 ## What parameters are we interested?
 
-parameters = "lambda"
+parameters = c("lambda", "mu.dye")
 sim.sample = coda.samples(model = sim, variable.names = parameters,
-                          n.iter = 1000)
+                          n.iter = 50000, thin = 50)
 stats = summary(sim.sample)
 stats
-
+plot(sim.sample)
