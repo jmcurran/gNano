@@ -94,9 +94,13 @@ makeBUGSdata = function(){
     }
     rm_is
     length(rm_is)
+    
     if (length(rm_is) > 0L) {
       profileData <- profileData[-rm_is,,]
       profileDyes <- profileDyes[-rm_is,,]
+      X <- X[-rm_is, ]
+      numSamples <- numSamples - length(rm_is)
+      alleles_at_locus <- alleles_at_locus[-rm_is, ]
     }
   }
   
