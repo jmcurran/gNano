@@ -140,7 +140,7 @@ system.time(update(sim, 100000))
 
 ## What parameters are we interested?
 
-parameters = c("pred")
+parameters = c("pred", "lambda", "mu.dye", "mu.amp", "sigma.sq.dye", "sigma.sq.amp", "T")
 sim.sample = coda.samples(model = sim, variable.names = parameters,
                           n.iter = 50000, thin = 50)
 stats = summary(sim.sample)
