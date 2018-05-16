@@ -81,7 +81,7 @@ makeBUGSdata = function(){
   sampleNo = rawData[, 2]
   
   ## Added by Mikkel
-  if (TRUE) {
+  if (FALSE) {
     str(profileDyes)
     sum(is.na(profileDyes))
     mean(is.na(profileDyes))
@@ -110,8 +110,16 @@ makeBUGSdata = function(){
     }
   }
   
-  numSampleLoci = sapply(split(locusNo, sampleNo), length)
-  browser()
+  ## Added by Mikkel
+  # Per sample, get missing loci:
+  #missing_loci <- vector("list", dim(profileData)[1])
+  use_loci <- vector("list", dim(profileData)[1])
+  for (i in seq_len(dim(profileData)[1])) { # loop over profiles
+    #i <- 1
+    #missing_loci[[i]] <- which(apply(profileData[i,,], 1, function(x) all(is.na(x))))
+    use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
+  }
+  #missing_loci
   
   # I want to return every bit of data I KNOW about
   # so all observations and all constants
@@ -121,7 +129,8 @@ makeBUGSdata = function(){
     numDyes = numDyes,
     S = 30000,
     profileDyes = profileDyes,
-    P = profileData, 
+    P = profileData,
+    use_loci = use_loci,
     pred = pred, 
     X = X,
     alleles_at_locus = alleles_at_locus
