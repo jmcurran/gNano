@@ -159,8 +159,9 @@ system.time(update(sim, 100000))
 ## What parameters are we interested?
 
 parameters = c("pred", "lambda", "mu.dye", "mu.amp", "sigma.sq.dye", "sigma.sq.amp", "T")
-sim.sample = coda.samples(model = sim, variable.names = parameters,
+sim.sample.truncated = coda.samples(model = sim, variable.names = parameters,
                           n.iter = 50000, thin = 50)
-stats = summary(sim.sample)
+stats.truncated = summary(sim.sample.truncated)
+save(sim.sample.truncated, stats.truncated, file = "James_truncated_model_results_2018_05_17.rda")
 #stats
 #plot(sim.sample)
