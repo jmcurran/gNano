@@ -33,9 +33,12 @@ model{
     #peak height variance for this profile
     Var[c] <- lambda / T[c]
     Prec[c] <- T[c] / lambda
+    start <- locStart[c]
+    end <- locEnd[c]
+    Loci <- use_loci[start:end]
     
     #generate expected heights for each allele at each locus in each profile
-    for(locus in 1:numLoci){ 
+    for(locus in Loci){ 
       for(allele in 1:alleles_at_locus[c,locus]){
         E[c, locus, allele] = T[c] * A[c, locus] * D[c, profileDyes[c, locus, allele]] * X[locus, allele]
         #model observed heights

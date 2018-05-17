@@ -121,6 +121,13 @@ makeBUGSdata = function(){
   }
   #missing_loci
   
+  numSampleLoci = sapply(use_loci, length)
+  locOffset = cumsum(numSampleLoci)
+  locStart = c(1, locOffset[-length(locOffset)] + 1)
+  locEnd = locStart + numSampleLoci - 1
+  use_loci = unlist(use_loci)
+
+  
   # I want to return every bit of data I KNOW about
   # so all observations and all constants
   bugsData = list(
@@ -131,6 +138,8 @@ makeBUGSdata = function(){
     profileDyes = profileDyes,
     P = profileData,
     use_loci = use_loci,
+    locStart = locStart,
+    locEnd = locEnd,
     pred = pred, 
     X = X,
     alleles_at_locus = alleles_at_locus
