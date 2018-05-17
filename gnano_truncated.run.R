@@ -148,7 +148,7 @@ makeBUGSdata = function(){
 
 library(rjags)
 bugsData = makeBUGSdata()
-bugsFile = here("gnano.bugs.R")
+bugsFile = here("gnano_truncated.bugs.R")
 
 ## compile the model
 sim = jags.model(file = bugsFile, data = bugsData)
