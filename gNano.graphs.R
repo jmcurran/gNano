@@ -2,12 +2,13 @@
 NumberLoci <- bugsData$numLoci
 NumberDyes <- bugsData$numDyes
 LocusNames <- c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", 
-                 "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
-                 "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")
+                "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
+                "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")
 DyeNames <- c("A", "G", "C", "T")
 DyeColours <- c("green", "blue", "black", "red")
 alleles_at_locus <- bugsData$alleles_at_locus
 profileData <- bugsData$P
+profileDyes <- bugsData$profileDyes
 NumberSamples <- dim(profileData)[[1]]
 #sets the save dircetory (just so I can use old graphing code)
 saveDir = here("graphs//")
@@ -19,38 +20,37 @@ lambda_capture <- sim.sample[[1]][,"lambda"]
 #amp efficiency mean capture
 A_mu_capture <- sim.sample[[1]][,"mu.amp[1]"]
 for (locus in 2:NumberLoci){
-	A_mu_capture <- cbind(A_mu_capture, sim.sample[[1]][,paste("mu.amp[",locus,"]",sep="")])
+  A_mu_capture <- cbind(A_mu_capture, sim.sample[[1]][,paste("mu.amp[",locus,"]",sep="")])
 }
 #dye effect mean capture
 D_mu_capture <- sim.sample[[1]][,"mu.dye[1]"]
 for (dye in 2:NumberDyes){
-	D_mu_capture <- cbind(D_mu_capture, sim.sample[[1]][,paste("mu.dye[",dye,"]",sep="")])
+  D_mu_capture <- cbind(D_mu_capture, sim.sample[[1]][,paste("mu.dye[",dye,"]",sep="")])
 }
 #amp efficiency sigma capture
 A_sigma_capture <- sim.sample[[1]][,"sigma.sq.amp[1]"]
 for (locus in 2:NumberLoci){
-	A_sigma_capture <- cbind(A_sigma_capture, sim.sample[[1]][,paste("sigma.sq.amp[",locus,"]",sep="")])
+  A_sigma_capture <- cbind(A_sigma_capture, sim.sample[[1]][,paste("sigma.sq.amp[",locus,"]",sep="")])
 }
 #dye effect sigma capture
 D_sigma_capture <- sim.sample[[1]][,"sigma.sq.dye[1]"]
 for (dye in 2:NumberDyes){
-	D_sigma_capture <- cbind(D_sigma_capture, sim.sample[[1]][,paste("sigma.sq.dye[",dye,"]",sep="")])
+  D_sigma_capture <- cbind(D_sigma_capture, sim.sample[[1]][,paste("sigma.sq.dye[",dye,"]",sep="")])
 }
 #expected peak hieghts
-E <- array(1,dim=c(NumberSamples, NumberLoci, 2))
+E <- array(NA,dim=c(NumberSamples, NumberLoci, 2))
 for (sample in 1:NumberSamples){
-  start = bugsData$locStart[sample]
-  end = bugsData$locEnd[sample]
-  Loci = bugsData$use_loci[start:end]
-	for (locus in Loci){
-		for (allele in 1:alleles_at_locus[sample,locus]){
-			E[sample, locus, allele] <- mean(sim.sample[[1]][,paste("pred[", sample, ",", locus, ",", allele, "]",sep="")])
-		}
-	}
+  for (locus in 1:NumberLoci){
+    if(!is.na(alleles_at_locus[sample,locus])){
+      for (allele in 1:alleles_at_locus[sample,locus]){
+        E[sample, locus, allele] <- mean(sim.sample[[1]][,paste("pred[", sample, ",", locus, ",", allele, "]",sep="")])
+      }
+    }
+  }
 }
 T <- array(1,dim=c(NumberSamples))
 for (sample in 1:NumberSamples){
-	T[sample] <- mean(sim.sample[[1]][,paste("T[", sample, "]",sep="")])
+  T[sample] <- mean(sim.sample[[1]][,paste("T[", sample, "]",sep="")])
 }
 
 #in case we want to cutr out the first part fo the graph
@@ -62,7 +62,8 @@ endcapture <- length(lambda_capture)
 
 
 ########## PLOT 3 - lambda over the MCMC ##########
-plot(lambda_capture[1:endcapture], type="l", xlab="iteration (x50)", ylab="lambda", ylim=c(0,100))
+ylim_max <- 1.1*max(lambda_capture)
+plot(lambda_capture[1:endcapture], type="l", xlab="iteration (x50)", ylab="lambda", ylim=c(0,ylim_max))
 dev.copy(jpeg, file=paste(saveDir, "lambda_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
 dev.off()
 
@@ -77,9 +78,10 @@ dev.off()
 
 
 ########## PLOT 5 - amplification efficiencies means over the MCMC ##########
-plot(A_mu_capture[1:endcapture,1], type="l", ylim=c(0, 3), xlab="iteration", ylab="Locus amplification efficiency", xlim=c(1,(1.25*endcapture)))
+ylim_max <- 1.1*max(A_mu_capture)
+plot(A_mu_capture[1:endcapture,1], type="l", ylim=c(0, ylim_max), xlab="iteration", ylab="Locus amplification efficiency", xlim=c(1,(1.25*endcapture)))
 for (locus in 2:NumberLoci){
-	lines(A_mu_capture[1:endcapture,locus], ylim=c(0, 3), xlim=c(1,(1.25*endcapture)))
+  lines(A_mu_capture[1:endcapture,locus], ylim=c(0, ylim_max), xlim=c(1,(1.25*endcapture)))
 }
 #set up labels
 x_label <- A_mu_capture[endcapture,]
@@ -89,15 +91,15 @@ dev.copy(jpeg, file=paste(saveDir, "Amp_efficiencies_MCMC.jpg", sep=""), height=
 dev.off()
 
 ########## PLOT 5.5 - amplification efficiencies sigmas over the MCMC ##########
-plot(A_sigma_capture[1:endcapture,1], type="l", ylim=c(0, 1), xlab="iteration", ylab="Locus amplification efficiency variance", xlim=c(1,(1.25*endcapture)))
+plot(A_sigma_capture[1:endcapture,1], type="l", ylim=c(0.00000001, 4), xlab="iteration", ylab="Locus amplification efficiency variance", xlim=c(1,(1.25*endcapture)), log="y")
 for (locus in 2:NumberLoci){
-	lines(A_sigma_capture[1:endcapture,locus], ylim=c(0, 1), xlim=c(1,(1.25*endcapture)))
+  lines(A_sigma_capture[1:endcapture,locus], ylim=c(0.00000001, 4), xlim=c(1,(1.25*endcapture)))
 }
 #set up labels
 x_label <- A_sigma_capture[endcapture,]
 y_label <- paste(LocusNames, " - ", signif(x_label,3),sep=" ")
 legend("right", y_label[order(ordered(-x_label))], cex=0.7, y.intersp=0.5)
-dev.copy(jpeg, file=paste(saveDir, "Amp_efficiencies_sigma_MCMC.jpg", sep=""), height=3000, width=3000, res=300)
+dev.copy(jpeg, file=paste(saveDir, "Amp_efficiencies_sigma_MCMC.jpg", sep=""), height=3000, width=4000, res=300)
 dev.off()
 
 
@@ -105,80 +107,82 @@ dev.off()
 ########## PLOT 6 - dye effiencies means over the MCMC ##########
 plot(D_mu_capture[1:endcapture,1], type="l", ylim=c(0, 1.5), xlab="iteration", ylab="Dye amplification efficiency", xlim=c(1,(1.25*endcapture)))
 for (locus in 2:NumberDyes){
-	lines(D_mu_capture[1:endcapture,locus], ylim=c(0, 1.5), xlim=c(1,(1.25*endcapture)))
+  lines(D_mu_capture[1:endcapture,locus], ylim=c(0, 1.5), xlim=c(1,(1.25*endcapture)))
 }
 #set up labels
 x_label <- D_mu_capture[endcapture,]
 y_label <- paste(DyeNames, " - ", signif(x_label,3),sep=" ")
 legend("right", y_label[order(ordered(-x_label))])
-dev.copy(jpeg, file=paste(saveDir, "Dye_effects_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.copy(jpeg, file=paste(saveDir, "Dye_effects_MCMC.jpg", sep=""), height=2000, width=3000, res=300)
 dev.off()
 
 
 ########## PLOT 6.5 - dye effiencies variances over the MCMC ##########
 plot(D_sigma_capture[1:endcapture,1], type="l", ylim=c(0, 0.05), xlab="iteration", ylab="Dye amplification efficiency variance", xlim=c(1,(1.25*endcapture)))
 for (locus in 2:NumberDyes){
-	lines(D_sigma_capture[1:endcapture,locus], ylim=c(0, 0.05), xlim=c(1,(1.25*endcapture)))
+  lines(D_sigma_capture[1:endcapture,locus], ylim=c(0, 0.05), xlim=c(1,(1.25*endcapture)))
 }
 #set up labels
 x_label <- D_sigma_capture[endcapture,]
 y_label <- paste(DyeNames, " - ", signif(x_label,3),sep=" ")
 legend("right", y_label[order(ordered(-x_label))])
-dev.copy(jpeg, file=paste(saveDir, "Dye_effects_sigma_MCMC.jpg", sep=""), height=2000, width=2000, res=300)
+dev.copy(jpeg, file=paste(saveDir, "Dye_effects_sigma_MCMC.jpg", sep=""), height=2000, width=3000, res=300)
 dev.off()
 
 
 ########## PLOT 7 - locus amplification efficiency distributions##########
-simulated_curves <- 5000
+simulated_curves <- 1000
 plot_x <- seq(0.01, 10, length=1000)
-color=rgb(0,0,0,alpha=0.01)
+color=rgb(0,0,0,alpha=0.1)
 for (locus in 1:NumberLoci){
-	#opens blank plot
-	plot(0,0, xlim=c(0, 4), ylim=c(0,4), xlab="Amplification effiency", ylab="", main = paste("locus ", LocusNames[locus], " amplification efficiency", sep=""))
-	#calculates mean and varaince of aplification efficiency mean
-	A_mu_mean <- mean(A_mu_capture[burnin:endcapture,locus])
-	A_mu_sigma <- sd(A_mu_capture[burnin:endcapture,locus])
-	#calculates mean and variance of aplification efficiency variance
-	A_sigma_mean <- mean(A_sigma_capture[burnin:endcapture,locus])
-	A_sigma_sigma <- sd(A_sigma_capture[burnin:endcapture,locus])
-	#randomly samples from mean and variance distributions 
-	for (randcurve in 1:simulated_curves){
-		random_A_mu <- rnorm(1, A_mu_mean, sqrt(A_mu_sigma))
-		random_A_sigma <- rnorm(1, A_sigma_mean, sqrt(A_sigma_sigma))
-		#draw LN
-		lines(plot_x, dlnorm(plot_x, log(random_A_mu), sqrt(random_A_sigma)), col=color, xlim=c(0, 4), ylim=c(0,4))
-	}
-	#plots mean values
-	lines(plot_x, dlnorm(plot_x, log(A_mu_mean), sqrt(A_sigma_mean)), col="red", xlim=c(0, 4), ylim=c(0,4))
-	#saves plots
-	dev.copy(jpeg, file=paste(saveDir, LocusNames[locus], " Amp efficiency.jpg", sep=""), height=2000, width=2000, res=300)
-	dev.off()
+  #calculates mean and varaince of aplification efficiency mean
+  A_mu_mean <- mean(A_mu_capture[burnin:endcapture,locus])
+  A_mu_sigma <- sd(A_mu_capture[burnin:endcapture,locus])
+  #calculates mean and variance of aplification efficiency variance
+  A_sigma_mean <- mean(A_sigma_capture[burnin:endcapture,locus])
+  A_sigma_sigma <- sd(A_sigma_capture[burnin:endcapture,locus])
+  ylim_max <- 3*dlnorm(A_mu_mean, log(A_mu_mean), sqrt(A_sigma_mean))
+  #opens blank plot
+  plot(0,0, xlim=c(0, (2*A_mu_mean)), ylim=c(0,ylim_max), xlab="Amplification effiency", ylab="", main = paste("locus ", LocusNames[locus], " amplification efficiency", sep=""))
+  #randomly samples from mean and variance distributions 
+  for (randcurve in 1:simulated_curves){
+    random_A_mu <- rnorm(1, A_mu_mean, sqrt(A_mu_sigma))
+    random_A_sigma <- rnorm(1, A_sigma_mean, sqrt(A_sigma_sigma))
+    #draw LN
+    lines(plot_x, dlnorm(plot_x, log(random_A_mu), sqrt(random_A_sigma)), col=color, xlim=c(0, (2*A_mu_mean)), ylim=c(0,ylim_max))
+  }
+  #plots mean values
+  lines(plot_x, dlnorm(plot_x, log(A_mu_mean), sqrt(A_sigma_mean)), col="red", xlim=c(0, (2*A_mu_mean)), ylim=c(0,ylim_max))
+  #saves plots
+  dev.copy(jpeg, file=paste(saveDir, LocusNames[locus], " Amp efficiency.jpg", sep=""), height=2000, width=2000, res=300)
+  dev.off()
 }
 
 
 ########## PLOT 8 - dye amplification efficiency distributions##########
-simulated_curves <- 5000
+simulated_curves <- 1000
 plot_x <- seq(0.01, 10, length=1000)
-color=rgb(0,0,0,alpha=0.01)
+color=rgb(0,0,0,alpha=0.1)
 #opens blank plot
-plot(-1000,-1000, xlim=c(0, 2), ylim=c(0,7), xlab="Dye amplification effiency", ylab="", main = "")
+ylim_max <- 10
+plot(-1000,-1000, xlim=c(0, 2), ylim=c(0,ylim_max), xlab="Dye amplification effiency", ylab="", main = "")
 for (dye in 1:NumberDyes){
-	#color <- col2rgb(DyeColours[dye], alpha=0.01)
-	#calculates mean and varaince of aplification efficiency mean
-	D_mu_mean <- mean(D_mu_capture[burnin:endcapture,dye])
-	D_mu_sigma <- sd(D_mu_capture[burnin:endcapture,dye])
-	#calculates mean and variance of aplification efficiency variance
-	D_sigma_mean <- mean(D_sigma_capture[burnin:endcapture,dye])
-	D_sigma_sigma <- sd(D_sigma_capture[burnin:endcapture,dye])
-	#randomly samples from mean and variance distributions 
-	for (randcurve in 1:simulated_curves){
-		random_D_mu <- rnorm(1, D_mu_mean, sqrt(D_mu_sigma))
-		random_D_sigma <- rnorm(1, D_sigma_mean, sqrt(D_sigma_sigma))
-		#draw LN
-		lines(plot_x, dlnorm(plot_x, log(random_D_mu), sqrt(random_D_sigma)), col=color, xlim=c(0, 2), ylim=c(0,7))
-	}
-	#draw curve using mean value
-	lines(plot_x, dlnorm(plot_x, log(D_mu_mean), sqrt(D_sigma_mean)), col=DyeColours[dye], xlim=c(0, 2), ylim=c(0,7))
+  #color <- col2rgb(DyeColours[dye], alpha=0.01)
+  #calculates mean and varaince of aplification efficiency mean
+  D_mu_mean <- mean(D_mu_capture[burnin:endcapture,dye])
+  D_mu_sigma <- sd(D_mu_capture[burnin:endcapture,dye])
+  #calculates mean and variance of aplification efficiency variance
+  D_sigma_mean <- mean(D_sigma_capture[burnin:endcapture,dye])
+  D_sigma_sigma <- sd(D_sigma_capture[burnin:endcapture,dye])
+  #randomly samples from mean and variance distributions 
+  for (randcurve in 1:simulated_curves){
+    random_D_mu <- rnorm(1, D_mu_mean, sqrt(D_mu_sigma))
+    random_D_sigma <- rnorm(1, D_sigma_mean, sqrt(D_sigma_sigma))
+    #draw LN
+    lines(plot_x, dlnorm(plot_x, log(random_D_mu), sqrt(random_D_sigma)), col=color, xlim=c(0, 2), ylim=c(0,ylim_max))
+  }
+  #draw curve using mean value
+  lines(plot_x, dlnorm(plot_x, log(D_mu_mean), sqrt(D_sigma_mean)), col=DyeColours[dye], xlim=c(0, 2), ylim=c(0,ylim_max))
 }
 #saves plots
 dev.copy(jpeg, file=paste(saveDir, "Dye efficiency.jpg", sep=""), height=2000, width=2000, res=300)
@@ -205,10 +209,10 @@ dev.off()
 
 ########## PLOT 10 - expected and observed peak height variability ##########
 E_over_O <- E/profileData
-xlim_range <- 2000
+xlim_range <- round(max(T), -3) #rounded to thousands
 plot(-1000,-1000, xlim=c(0, xlim_range), ylim=c(0,4), xlab="Template", ylab="O/E", main = paste("Peak Height varibility", sep=""))
 for (sample in 1:NumberSamples){
-	points(seq(T[sample], length=length(E_over_O[sample,,])), E_over_O[sample,,], xlim=c(0, xlim_range), ylim=c(0,4), add=TRUE)
+  points(seq(T[sample], length=length(E_over_O[sample,,])), E_over_O[sample,,], xlim=c(0, xlim_range), ylim=c(0,4), add=TRUE)
 }
 #now draw lines from analysis
 mean_lambda <- mean(lambda_capture[burnin:endcapture])
@@ -222,22 +226,22 @@ lines(plot_seq , exp(-sqrt(Z_value*mean_lambda/plot_seq)), col="red")
 count_within_bounds <- 0
 count_outside_bounds <- 0
 for (sample in 1:NumberSamples){
-	for (locus in 1:NumberLoci){
-		for (allele in 1:alleles_at_locus[sample,locus]){
-			if(!is.na(E_over_O)) {
-				if (E_over_O[sample, locus, allele] <= exp(sqrt(Z_value*mean_lambda/T[sample])) && E_over_O[sample, locus, allele] >= exp(-sqrt(Z_value*mean_lambda/T[sample]))){
-					count_within_bounds <- count_within_bounds +1
-				}
-				else {
-					count_outside_bounds <- count_outside_bounds + 1
-				}
-			}
-		}
-	}
+  for (locus in 1:NumberLoci){
+    for (allele in 1:alleles_at_locus[sample,locus]){
+      if(!is.na(E_over_O)) {
+        if (E_over_O[sample, locus, allele] <= exp(sqrt(Z_value*mean_lambda/T[sample])) && E_over_O[sample, locus, allele] >= exp(-sqrt(Z_value*mean_lambda/T[sample]))){
+          count_within_bounds <- count_within_bounds +1
+        }
+        else {
+          count_outside_bounds <- count_outside_bounds + 1
+        }
+      }
+    }
+  }
 }
 percent_within <- round(100*count_within_bounds/(count_within_bounds+count_outside_bounds), 2)
-legend("right", c("O/E", paste(capture_percentage, " % bounds (",percent_within,"% actual)",sep="")), pch=c("o","-"), col=c("black", "red"))
-dev.copy(jpeg, file=paste(saveDir, "Peak_Height_Variability.jpg", sep=""), height=2000, width=2000, res=300)
+legend("topright", c("O/E", paste(capture_percentage, " % bounds (",percent_within,"% actual)",sep="")), pch=c("o","-"), col=c("black", "red"))
+dev.copy(jpeg, file=paste(saveDir, "Peak_Height_Variability.jpg", sep=""), height=2000, width=3000, res=300)
 dev.off()
 
 
@@ -251,28 +255,28 @@ dye1 <- c(1, 1, 1, 3, 3, 2)
 dye2 <- c(3, 2, 4, 2, 4, 4)
 #now draws simulated vs expected ratios
 for (combo in 1:combinations){
-	dye1_dye2_observed <- Hb[(profileDyes[,,1]==dye1[combo] & profileDyes[,,2]==dye2[combo])]
-	dye1_mean <- mean(D_mu_capture[burnin:endcapture,dye1[combo]])
-	dye1_sigma <- sd(D_sigma_capture[burnin:endcapture,dye1[combo]])
-	dye1_simulated <- rlnorm(1000, log(dye1_mean), sqrt(dye1_sigma))
-	dye2_mean <- mean(D_mu_capture[burnin:endcapture,dye2[combo]])
-	dye2_sigma <- sd(D_sigma_capture[burnin:endcapture,dye2[combo]])
-	dye2_simulated <- rlnorm(1000, log(dye2_mean), sqrt(dye2_sigma))
-	#simulates peak height variability from stochastic effects (random peak between 500 and 5000 rfu)
-	peak1_variability <- array(1,dim=c(1000))
-	for (var in 1:1000){
-		#random peak height from observed peak heights, which are exponential, but above AT
-		peak <- max(50, rexp(1, 1/mean_peak_height))
-		peak1_variability[var] <- rlnorm(1, log(peak), sqrt(mean_lambda/peak))/rlnorm(1, log(peak), sqrt(mean_lambda/peak))
-	}
-	dye1_dye2_simulated <- peak1_variability*dye1_simulated/dye2_simulated
-	if (combo == 1){
-		boxplot(dye1_dye2_observed, at=1, xlim=c(1,combinations*2), ylim=c(0,7), main="observed (O) and simulated (S) dye balance", xlab="", ylab="Ratio of Heights", col="red")
-	}
-	else { #just add
-		boxplot(dye1_dye2_observed, at=((combo-1)*2+1), xlim=c(1,combinations*2), ylim=c(0,7), col="red", add=TRUE)
-	}
-	boxplot(dye1_dye2_simulated, at=(combo*2), xlim=c(1,combinations*2), ylim=c(0,7), col="blue", add=TRUE)
+  dye1_dye2_observed <- Hb[(profileDyes[,,1]==dye1[combo] & profileDyes[,,2]==dye2[combo])]
+  dye1_mean <- mean(D_mu_capture[burnin:endcapture,dye1[combo]])
+  dye1_sigma <- sd(D_sigma_capture[burnin:endcapture,dye1[combo]])
+  dye1_simulated <- rlnorm(1000, log(dye1_mean), sqrt(dye1_sigma))
+  dye2_mean <- mean(D_mu_capture[burnin:endcapture,dye2[combo]])
+  dye2_sigma <- sd(D_sigma_capture[burnin:endcapture,dye2[combo]])
+  dye2_simulated <- rlnorm(1000, log(dye2_mean), sqrt(dye2_sigma))
+  #simulates peak height variability from stochastic effects (random peak between 500 and 5000 rfu)
+  peak1_variability <- array(1,dim=c(1000))
+  for (var in 1:1000){
+    #random peak height from observed peak heights, which are exponential, but above AT
+    peak <- max(50, rexp(1, 1/mean_peak_height))
+    peak1_variability[var] <- rlnorm(1, log(peak), sqrt(mean_lambda/peak))/rlnorm(1, log(peak), sqrt(mean_lambda/peak))
+  }
+  dye1_dye2_simulated <- peak1_variability*dye1_simulated/dye2_simulated
+  if (combo == 1){
+    boxplot(dye1_dye2_observed, at=1, xlim=c(1,combinations*2), ylim=c(0,7), main="observed (O) and simulated (S) dye balance", xlab="", ylab="Ratio of Heights", col="red")
+  }
+  else { #just add
+    boxplot(dye1_dye2_observed, at=((combo-1)*2+1), xlim=c(1,combinations*2), ylim=c(0,7), col="red", add=TRUE)
+  }
+  boxplot(dye1_dye2_simulated, at=(combo*2), xlim=c(1,combinations*2), ylim=c(0,7), col="blue", add=TRUE)
 }
 axis(1, at=1:(2*combinations), labels=c("A/C(O)", "A/C(S)", "A/G(O)", "A/G(S)", "A/T(O)", "A/T(S)", "C/G(O)", "C/G(S)", "C/T(O)", "C/T(S)", "G/T(O)", "G/T(S)"))
 dev.copy(jpeg, file=paste(saveDir, "Dye_amplification_Efficiency.jpg", sep=""), height=2000, width=6000, res=300)
@@ -286,37 +290,37 @@ scaled_O  <- array(data=NA, dim=c(NumberSamples, NumberLoci, 2))
 #add across peaks of heterozygote
 scaled_O  <- apply(profileData, c(1, 2), sum, na.rm=TRUE)
 for (profile in 1:NumberSamples){
-	scaled_O[profile,] <- scaled_O[profile,]/Av_peakheight_per_profile[profile]
+  scaled_O[profile,] <- scaled_O[profile,]/Av_peakheight_per_profile[profile]
 }
 #plot as boxplot
 for (locus in 1:NumberLoci){
-	if (locus == 1){
-		boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), main="observed (O) and simulated (S) lous amp balance", xlab="", ylab="ratio peak heights / average", col="red")
-	}
-	else {
-		boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="red", add=TRUE)
-	}
+  if (locus == 1){
+    boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), main="observed (O) and simulated (S) lous amp balance", xlab="", ylab="ratio peak heights / average", col="red")
+  }
+  else {
+    boxplot(scaled_O[,locus], at=(2*(locus-1)), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="red", add=TRUE)
+  }
 }
 #now the simulated values
 random_profile <- array(0, dim=c(1000, NumberLoci))
 for (var in 1:1000){
-	#choose template
-	random_template <- max(50, rexp(1, 1/mean_peak_height))
-	for (locus in 1:NumberLoci){
-		A_mu_means <- mean(A_mu_capture[burnin:endcapture,locus])
-		A_sigma_means <- mean(A_sigma_capture[burnin:endcapture,locus])
-		#random peak height variability value
-		peak_variability <- rlnorm(1, log(random_template), sqrt(mean_lambda/random_template))
-		#random locus amp efficiency value
-		random_locus_amp <- rlnorm(1, log(A_mu_means), sqrt(A_sigma_means))
-		random_profile[var,locus] <- peak_variability*random_locus_amp
-	}
-	#scale
-	random_profile[var,] <- random_profile[var,]/mean(random_profile[var,])
+  #choose template
+  random_template <- max(50, rexp(1, 1/mean_peak_height))
+  for (locus in 1:NumberLoci){
+    A_mu_means <- mean(A_mu_capture[burnin:endcapture,locus])
+    A_sigma_means <- mean(A_sigma_capture[burnin:endcapture,locus])
+    #random peak height variability value
+    peak_variability <- rlnorm(1, log(random_template), sqrt(mean_lambda/random_template))
+    #random locus amp efficiency value
+    random_locus_amp <- rlnorm(1, log(A_mu_means), sqrt(A_sigma_means))
+    random_profile[var,locus] <- peak_variability*random_locus_amp
+  }
+  #scale
+  random_profile[var,] <- random_profile[var,]/mean(random_profile[var,])
 }
 #plot simulated data
 for (locus in 1:NumberLoci){
-	boxplot(random_profile[,locus], at=(2*(locus-1)+1), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="blue", add=TRUE)
+  boxplot(random_profile[,locus], at=(2*(locus-1)+1), xlim=c(1,NumberLoci*2), ylim=c(0,6), col="blue", add=TRUE)
 }
 axis(1, at=seq(1,(2*NumberLoci-1), length = NumberLoci), labels=LocusNames)
 dev.copy(jpeg, file=paste(saveDir, "Locus_amplification_Efficiency.jpg", sep=""), height=2000, width=6000, res=300)
@@ -361,9 +365,9 @@ graph_counter <- 1
 length_of_array <- signif((endcapture - burnin)/4, 0)
 p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
 for (quarter in 1:4){
-	start_position <- (quarter-1)*length_of_array + burnin
-	end_position <- quarter*length_of_array + burnin - 1
-	p_cap_quarters[quarter,] <- p_total_capture[start_position:end_position]
+  start_position <- (quarter-1)*length_of_array + burnin
+  end_position <- quarter*length_of_array + burnin - 1
+  p_cap_quarters[quarter,] <- p_total_capture[start_position:end_position]
 }
 variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
 GR <- gelman.diag(variable_as_mcmc_list)
@@ -375,9 +379,9 @@ graph_counter <- graph_counter + 1
 length_of_array <- signif((endcapture - burnin)/4, 0)
 p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
 for (quarter in 1:4){
-	start_position <- (quarter-1)*length_of_array + burnin
-	end_position <- quarter*length_of_array + burnin - 1
-	p_cap_quarters[quarter,] <- lambda_capture[start_position:end_position]
+  start_position <- (quarter-1)*length_of_array + burnin
+  end_position <- quarter*length_of_array + burnin - 1
+  p_cap_quarters[quarter,] <- lambda_capture[start_position:end_position]
 }
 variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
 GR <- gelman.diag(variable_as_mcmc_list)
@@ -388,75 +392,76 @@ graph_counter <- graph_counter + 1
 #D mu
 GR_D_mu <- array(data=NA, dim=c(NumberDyes))
 for (dye in 1:NumberDyes){
-	length_of_array <- signif((endcapture - burnin)/4, 0)
-	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-	for (quarter in 1:4){
-		start_position <- (quarter-1)*length_of_array + burnin
-		end_position <- quarter*length_of_array + burnin - 1
-		p_cap_quarters[quarter,] <- D_mu_capture[start_position:end_position,dye]
-	}
-	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-	GR <- gelman.diag(variable_as_mcmc_list)
-	GR_D_mu[dye] <- GR[[1]][1]
-	graph_values[graph_counter] <- GR_D_mu[dye]
-	graph_labels[graph_counter] <- paste("Dye amp mean (", DyeNames[dye], ")", sep="")
-	graph_counter <- graph_counter + 1
+  length_of_array <- signif((endcapture - burnin)/4, 0)
+  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+  for (quarter in 1:4){
+    start_position <- (quarter-1)*length_of_array + burnin
+    end_position <- quarter*length_of_array + burnin - 1
+    p_cap_quarters[quarter,] <- D_mu_capture[start_position:end_position,dye]
+  }
+  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+  GR <- gelman.diag(variable_as_mcmc_list)
+  GR_D_mu[dye] <- GR[[1]][1]
+  graph_values[graph_counter] <- GR_D_mu[dye]
+  graph_labels[graph_counter] <- paste("Dye amp mean (", DyeNames[dye], ")", sep="")
+  graph_counter <- graph_counter + 1
 }
 #D sigma
 GR_D_sigma <- array(data=NA, dim=c(NumberDyes))
 for (dye in 1:NumberDyes){
-	length_of_array <- signif((endcapture - burnin)/4, 0)
-	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-	for (quarter in 1:4){
-		start_position <- (quarter-1)*length_of_array + burnin
-		end_position <- quarter*length_of_array + burnin - 1
-		p_cap_quarters[quarter,] <- D_sigma_capture[start_position:end_position,dye]
-	}
-	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-	GR <- gelman.diag(variable_as_mcmc_list)
-	GR_D_sigma[dye] <- GR[[1]][1]
-	graph_values[graph_counter] <- GR_D_sigma[dye]
-	graph_labels[graph_counter] <- paste("Dye amp var (", DyeNames[dye], ")", sep="")
-	graph_counter <- graph_counter + 1
+  length_of_array <- signif((endcapture - burnin)/4, 0)
+  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+  for (quarter in 1:4){
+    start_position <- (quarter-1)*length_of_array + burnin
+    end_position <- quarter*length_of_array + burnin - 1
+    p_cap_quarters[quarter,] <- D_sigma_capture[start_position:end_position,dye]
+  }
+  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+  GR <- gelman.diag(variable_as_mcmc_list)
+  GR_D_sigma[dye] <- GR[[1]][1]
+  graph_values[graph_counter] <- GR_D_sigma[dye]
+  graph_labels[graph_counter] <- paste("Dye amp var (", DyeNames[dye], ")", sep="")
+  graph_counter <- graph_counter + 1
 }
 #A mu
 GR_A_mu <- array(data=NA, dim=c(NumberLoci))
 for (locus in 1:NumberLoci){
-	length_of_array <- signif((endcapture - burnin)/4, 0)
-	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-	for (quarter in 1:4){
-		start_position <- (quarter-1)*length_of_array + burnin
-		end_position <- quarter*length_of_array + burnin - 1
-		p_cap_quarters[quarter,] <- A_mu_capture[start_position:end_position,locus]
-	}
-	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-	GR <- gelman.diag(variable_as_mcmc_list)
-	GR_A_mu[locus] <- GR[[1]][1]
-	graph_values[graph_counter] <- GR_A_mu[locus]
-	graph_labels[graph_counter] <- paste("Locus amp mean (", LocusNames[locus], ")", sep="")
-	graph_counter <- graph_counter + 1
+  length_of_array <- signif((endcapture - burnin)/4, 0)
+  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+  for (quarter in 1:4){
+    start_position <- (quarter-1)*length_of_array + burnin
+    end_position <- quarter*length_of_array + burnin - 1
+    p_cap_quarters[quarter,] <- A_mu_capture[start_position:end_position,locus]
+  }
+  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+  GR <- gelman.diag(variable_as_mcmc_list)
+  GR_A_mu[locus] <- GR[[1]][1]
+  graph_values[graph_counter] <- GR_A_mu[locus]
+  graph_labels[graph_counter] <- paste("Locus amp mean (", LocusNames[locus], ")", sep="")
+  graph_counter <- graph_counter + 1
 }
 #A sigma
 GR_A_sigma <- array(data=NA, dim=c(NumberLoci))
 for (locus in 1:NumberLoci){
-	length_of_array <- signif((endcapture - burnin)/4, 0)
-	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-	for (quarter in 1:4){
-		start_position <- (quarter-1)*length_of_array + burnin
-		end_position <- quarter*length_of_array + burnin - 1
-		p_cap_quarters[quarter,] <- A_sigma_capture[start_position:end_position,locus]
-	}
-	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-	GR <- gelman.diag(variable_as_mcmc_list)
-	GR_A_sigma[locus] <- GR[[1]][1]
-	graph_values[graph_counter] <- GR_A_sigma[locus]
-	graph_labels[graph_counter] <- paste("Locus amp var (", LocusNames[locus], ")", sep="")
-	graph_counter <- graph_counter + 1
+  length_of_array <- signif((endcapture - burnin)/4, 0)
+  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
+  for (quarter in 1:4){
+    start_position <- (quarter-1)*length_of_array + burnin
+    end_position <- quarter*length_of_array + burnin - 1
+    p_cap_quarters[quarter,] <- A_sigma_capture[start_position:end_position,locus]
+  }
+  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
+  GR <- gelman.diag(variable_as_mcmc_list)
+  GR_A_sigma[locus] <- GR[[1]][1]
+  graph_values[graph_counter] <- GR_A_sigma[locus]
+  graph_labels[graph_counter] <- paste("Locus amp var (", LocusNames[locus], ")", sep="")
+  graph_counter <- graph_counter + 1
 }
+graph_labels <- paste(graph_labels, " : ", round(graph_values,2), sep="")
 #now draw the graph
 plot (graph_values, main="Gelman Rubin convergence diagnostic", xlab="Parameter", ylab="GR value", xaxt='n', ylim=c(0,12))
 abline(h=1.2, col="grey")
-text(seq(1,(graph_counter-1), length=(graph_counter-1)), (graph_values+1.5), labels=graph_labels, pos=3, cex=0.7, srt=90)
+text(seq(1,(graph_counter-1), length=(graph_counter-1)), (graph_values+2.5), labels=graph_labels, pos=3, cex=0.7, srt=90)
 dev.copy(jpeg, file=paste(saveDir, "parameter_GR.jpg", sep=""), height=2000, width=6000, res=300)
 dev.off()
 

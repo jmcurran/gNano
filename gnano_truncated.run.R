@@ -31,16 +31,6 @@ makeBUGSdata = function(){
   #homozygous formatted into array [sample][locus]
   profileHomozygote = X = alleles_at_locus =  matrix(NA, nrow = numSamples, ncol = numLoci)
   
-  
-  # library(sqldf)
-  # library(tidyverse)
-  # 
-  # sampleNames = rawData %>% 
-  #   select(Sample) %>% 
-  #   unique() #%>% 
-  # 
-  
-  
   #size of the raw data set
   rawDataLength = nrow(rawData)
   
@@ -126,7 +116,7 @@ makeBUGSdata = function(){
   locStart = c(1, locOffset[-length(locOffset)] + 1)
   locEnd = locStart + numSampleLoci - 1
   use_loci = unlist(use_loci)
-
+  
   
   # I want to return every bit of data I KNOW about
   # so all observations and all constants
@@ -156,12 +146,8 @@ sim = jags.model(file = bugsFile, data = bugsData)
 ## do a bit of burn in - no idea what is sufficient at this point
 system.time(update(sim, 100000))
 
-## What parameters are we interested?
-
+## The parameters are we interested
 parameters = c("pred", "lambda", "mu.dye", "mu.amp", "sigma.sq.dye", "sigma.sq.amp", "T")
-sim.sample.truncated = coda.samples(model = sim, variable.names = parameters,
-                          n.iter = 50000, thin = 50)
-stats.truncated = summary(sim.sample.truncated)
-save(sim.sample.truncated, stats.truncated, file = "James_truncated_model_results_2018_05_17.rda")
-#stats
-#plot(sim.sample)
+## run the model
+sim.sample = coda.samples(model = sim, variable.names = parameters, n.iter = 50000, thin = 50)
+stats = summary(sim.sample)
