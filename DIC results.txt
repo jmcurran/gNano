@@ -1,0 +1,24 @@
+dic.unif
+Mean deviance:  66709 
+penalty 1594 
+Penalized deviance: 68303 
+
+dic.gamma
+Mean deviance:  66800 
+penalty 1549 
+Penalized deviance: 68349
+
+dic.gamma.NoAmp
+Mean deviance:  74093 
+penalty 272.9 
+Penalized deviance: 74366 
+
+dic.gamma.NoDye
+Mean deviance:  67710 
+penalty 1283 
+Penalized deviance: 68993 
+
+dic.gamma.NoAmpNoDye
+Mean deviance:  76275 
+penalty 130.8 
+Penalized deviance: 76406
