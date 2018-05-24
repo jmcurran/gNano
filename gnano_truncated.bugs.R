@@ -51,6 +51,7 @@ model{
         #model observed heights
         P[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])T(0, 30000)
         pred[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])T(0, 30000)
+        loglik[c, locus, allele] <- log(dlnorm(pred[c, locus, allele], log(E[c, locus, allele]), Prec[c]))
       }
     }
   }

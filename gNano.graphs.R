@@ -1,3 +1,13 @@
+createGraphs <- function(sim.sample, saveDir){
+
+  #creates the directory if it doesn't already exist
+  if (file.exists(saveDir)){
+    #do nothing
+  } else {
+    #create it
+    dir.create(file.path(saveDir))
+  }
+  
 ####### setting up the variables ##########
 NumberLoci <- bugsData$numLoci
 NumberDyes <- bugsData$numDyes
@@ -11,7 +21,7 @@ profileData <- bugsData$P
 profileDyes <- bugsData$profileDyes
 NumberSamples <- dim(profileData)[[1]]
 #sets the save dircetory (just so I can use old graphing code)
-saveDir = here("graphs//")
+#saveDir = here("graphs//")
 
 
 
@@ -467,3 +477,5 @@ dev.off()
 
 #################### END PLOTS ################################
 
+
+} #end function
