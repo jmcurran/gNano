@@ -32,8 +32,10 @@ model{
       for(allele in 1:alleles_at_locus[c,locus]){
         E[c, locus, allele] = T[c] * D[c, profileDyes[c, locus, allele]] * X[locus, allele]
         #model observed heights
-        P[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])T(0, 30000)
-        pred[c, locus, allele] ~ dlnorm(log(E[c, locus, allele]), Prec[c])T(0, 30000)
+        #LNmu <- log(E[c, locus, allele])+Var[c]
+        P[c, locus, allele] ~ dlnorm(log(E[c, locus, allele])+Var[c], Prec[c])T(0, 30000)
+        pred[c, locus, allele] ~ dlnorm(log(E[c, locus, allele])+Var[c], Prec[c])T(0, 30000)
+        loglik[c, locus, allele] <- log(dlnorm(P[c, locus, allele], log(E[c, locus, allele])+Var[c], Prec[c]))
       }
     }
   }

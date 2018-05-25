@@ -1,4 +1,4 @@
-createGraphs <- function(sim.sample, saveDir){
+createGraphs <- function(sim.sample, saveDir, bugsData){
 
   #creates the directory if it doesn't already exist
   if (file.exists(saveDir)){
@@ -156,8 +156,14 @@ for (locus in 1:NumberLoci){
   plot(0,0, xlim=c(0, (2*A_mu_mean)), ylim=c(0,ylim_max), xlab="Amplification effiency", ylab="", main = paste("locus ", LocusNames[locus], " amplification efficiency", sep=""))
   #randomly samples from mean and variance distributions 
   for (randcurve in 1:simulated_curves){
-    random_A_mu <- rnorm(1, A_mu_mean, sqrt(A_mu_sigma))
-    random_A_sigma <- rnorm(1, A_sigma_mean, sqrt(A_sigma_sigma))
+    random_A_mu <- -1
+    while (random_A_mu <= 0){
+      random_A_mu <- rnorm(1, A_mu_mean, sqrt(A_mu_sigma))
+    }
+    random_A_sigma <- -1
+    while(random_A_sigma <= 0){
+      random_A_sigma <- rnorm(1, A_sigma_mean, sqrt(A_sigma_sigma))
+    }
     #draw LN
     lines(plot_x, dlnorm(plot_x, log(random_A_mu), sqrt(random_A_sigma)), col=color, xlim=c(0, (2*A_mu_mean)), ylim=c(0,ylim_max))
   }
@@ -186,8 +192,14 @@ for (dye in 1:NumberDyes){
   D_sigma_sigma <- sd(D_sigma_capture[burnin:endcapture,dye])
   #randomly samples from mean and variance distributions 
   for (randcurve in 1:simulated_curves){
-    random_D_mu <- rnorm(1, D_mu_mean, sqrt(D_mu_sigma))
-    random_D_sigma <- rnorm(1, D_sigma_mean, sqrt(D_sigma_sigma))
+    random_D_mu <- -1
+    while(random_D_mu <= 0){
+      random_D_mu <- rnorm(1, D_mu_mean, sqrt(D_mu_sigma))
+    }
+    random_D_sigma <- -1
+    while(random_D_sigma <= 0){
+      random_D_sigma <- rnorm(1, D_sigma_mean, sqrt(D_sigma_sigma))
+    }
     #draw LN
     lines(plot_x, dlnorm(plot_x, log(random_D_mu), sqrt(random_D_sigma)), col=color, xlim=c(0, 2), ylim=c(0,ylim_max))
   }
@@ -209,7 +221,7 @@ hist(profileData, main="observed peak heights", xlab="peak height (rfu)", xlim=c
 plot_x <- seq(1,30000, length = 10000)
 plot_y <- dexp(plot_x, 1/mean_peak_height)
 lines(plot_x, binwidth*peak_count*plot_y, col="red")
-dev.copy(jpeg, file=paste(saveDir, "Observed_peak_heaights.jpg", sep=""), height=1500, width=3000, res=300)
+dev.copy(jpeg, file=paste(saveDir, "Observed_peak_heights.jpg", sep=""), height=1500, width=3000, res=300)
 dev.off()
 
 
@@ -222,7 +234,7 @@ E_over_O <- E/profileData
 xlim_range <- round(max(T), -3) #rounded to thousands
 plot(-1000,-1000, xlim=c(0, xlim_range), ylim=c(0,4), xlab="Template", ylab="O/E", main = paste("Peak Height varibility", sep=""))
 for (sample in 1:NumberSamples){
-  points(seq(T[sample], length=length(E_over_O[sample,,])), E_over_O[sample,,], xlim=c(0, xlim_range), ylim=c(0,4), add=TRUE)
+  points(seq(T[sample], length=length(E_over_O[sample,,])), E_over_O[sample,,], xlim=c(0, xlim_range), ylim=c(0,4))
 }
 #now draw lines from analysis
 mean_lambda <- mean(lambda_capture[burnin:endcapture])
@@ -237,8 +249,9 @@ count_within_bounds <- 0
 count_outside_bounds <- 0
 for (sample in 1:NumberSamples){
   for (locus in 1:NumberLoci){
+    if(!is.na(alleles_at_locus[sample,locus])){
     for (allele in 1:alleles_at_locus[sample,locus]){
-      if(!is.na(E_over_O)) {
+      if(!is.na(E_over_O[sample, locus, allele])) {
         if (E_over_O[sample, locus, allele] <= exp(sqrt(Z_value*mean_lambda/T[sample])) && E_over_O[sample, locus, allele] >= exp(-sqrt(Z_value*mean_lambda/T[sample]))){
           count_within_bounds <- count_within_bounds +1
         }
@@ -246,6 +259,7 @@ for (sample in 1:NumberSamples){
           count_outside_bounds <- count_outside_bounds + 1
         }
       }
+    }
     }
   }
 }
@@ -342,59 +356,18 @@ dev.off()
 library(coda)
 
 
-########plot 13 not configured with JAGS yet###############
-########## PLOT 13 - Gelman Rubin convergence diagnostics for individual profile probabities ##########
-#array to hold GR values
-#profile_p_GR <- array(data=NA, dim=c(NumberSamples))
-#for (profile in 1:NumberSamples){
-#	length_of_array <- signif((endcapture - burnin)/4, 0)
-#	p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-#	for (quarter in 1:4){
-#		start_position <- (quarter-1)*length_of_array + burnin
-#		end_position <- quarter*length_of_array + burnin - 1
-#		p_cap_quarters[quarter,] <- p_capture[profile,start_position:end_position]
-#	}
-#	variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-#	GR <- gelman.diag(variable_as_mcmc_list)
-#	profile_p_GR[profile] <- GR[[1]][1]
-#}
-#graph GR values
-#plot(profile_p_GR, main="profile GR", xlab="Profile", ylab="GR")
-#abline(h=1.2)
-#dev.copy(jpeg, file=paste(saveDir, "Profile_GR.jpg", sep=""), height=2000, width=6000, res=300)
-#dev.off()
-
-
 ########## PLOT 14 - Gelman Rubin convergence diagnostics for other model parameters ##########
 #values for graph
 number_points <- 1 + 1 + NumberDyes + NumberDyes + NumberLoci + NumberLoci
 graph_values <- array(data=NA, dim=c(number_points))
 graph_labels <- array(data=NA, dim=c(number_points))
 graph_counter <- 1
-#p_total
-length_of_array <- signif((endcapture - burnin)/4, 0)
-p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-for (quarter in 1:4){
-  start_position <- (quarter-1)*length_of_array + burnin
-  end_position <- quarter*length_of_array + burnin - 1
-  p_cap_quarters[quarter,] <- p_total_capture[start_position:end_position]
-}
-variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-GR <- gelman.diag(variable_as_mcmc_list)
-GR_p_total <- GR[[1]][1]
-graph_values[graph_counter] <- GR_p_total
+#dataset probability (not applicable)
+graph_values[graph_counter] <- 0#GR_p_total
 graph_labels[graph_counter] <- "dataset probability"
 graph_counter <- graph_counter + 1
 #lambda
-length_of_array <- signif((endcapture - burnin)/4, 0)
-p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-for (quarter in 1:4){
-  start_position <- (quarter-1)*length_of_array + burnin
-  end_position <- quarter*length_of_array + burnin - 1
-  p_cap_quarters[quarter,] <- lambda_capture[start_position:end_position]
-}
-variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-GR <- gelman.diag(variable_as_mcmc_list)
+GR <- gelman.diag(sim.sample[,"lambda"])
 GR_lambda <- GR[[1]][1]
 graph_values[graph_counter] <- GR_lambda
 graph_labels[graph_counter] <- "lambda"
@@ -402,15 +375,7 @@ graph_counter <- graph_counter + 1
 #D mu
 GR_D_mu <- array(data=NA, dim=c(NumberDyes))
 for (dye in 1:NumberDyes){
-  length_of_array <- signif((endcapture - burnin)/4, 0)
-  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-  for (quarter in 1:4){
-    start_position <- (quarter-1)*length_of_array + burnin
-    end_position <- quarter*length_of_array + burnin - 1
-    p_cap_quarters[quarter,] <- D_mu_capture[start_position:end_position,dye]
-  }
-  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-  GR <- gelman.diag(variable_as_mcmc_list)
+  GR <- gelman.diag(sim.sample[,paste("mu.dye[",dye,"]",sep="")])
   GR_D_mu[dye] <- GR[[1]][1]
   graph_values[graph_counter] <- GR_D_mu[dye]
   graph_labels[graph_counter] <- paste("Dye amp mean (", DyeNames[dye], ")", sep="")
@@ -419,15 +384,7 @@ for (dye in 1:NumberDyes){
 #D sigma
 GR_D_sigma <- array(data=NA, dim=c(NumberDyes))
 for (dye in 1:NumberDyes){
-  length_of_array <- signif((endcapture - burnin)/4, 0)
-  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-  for (quarter in 1:4){
-    start_position <- (quarter-1)*length_of_array + burnin
-    end_position <- quarter*length_of_array + burnin - 1
-    p_cap_quarters[quarter,] <- D_sigma_capture[start_position:end_position,dye]
-  }
-  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-  GR <- gelman.diag(variable_as_mcmc_list)
+  GR <- gelman.diag(sim.sample[,paste("sigma.sq.dye[",dye,"]",sep="")])
   GR_D_sigma[dye] <- GR[[1]][1]
   graph_values[graph_counter] <- GR_D_sigma[dye]
   graph_labels[graph_counter] <- paste("Dye amp var (", DyeNames[dye], ")", sep="")
@@ -436,15 +393,7 @@ for (dye in 1:NumberDyes){
 #A mu
 GR_A_mu <- array(data=NA, dim=c(NumberLoci))
 for (locus in 1:NumberLoci){
-  length_of_array <- signif((endcapture - burnin)/4, 0)
-  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-  for (quarter in 1:4){
-    start_position <- (quarter-1)*length_of_array + burnin
-    end_position <- quarter*length_of_array + burnin - 1
-    p_cap_quarters[quarter,] <- A_mu_capture[start_position:end_position,locus]
-  }
-  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-  GR <- gelman.diag(variable_as_mcmc_list)
+  GR <- gelman.diag(sim.sample[,paste("mu.amp[",dye,"]",sep="")])
   GR_A_mu[locus] <- GR[[1]][1]
   graph_values[graph_counter] <- GR_A_mu[locus]
   graph_labels[graph_counter] <- paste("Locus amp mean (", LocusNames[locus], ")", sep="")
@@ -453,15 +402,7 @@ for (locus in 1:NumberLoci){
 #A sigma
 GR_A_sigma <- array(data=NA, dim=c(NumberLoci))
 for (locus in 1:NumberLoci){
-  length_of_array <- signif((endcapture - burnin)/4, 0)
-  p_cap_quarters <- array(data=NA, dim=c(4, length_of_array))
-  for (quarter in 1:4){
-    start_position <- (quarter-1)*length_of_array + burnin
-    end_position <- quarter*length_of_array + burnin - 1
-    p_cap_quarters[quarter,] <- A_sigma_capture[start_position:end_position,locus]
-  }
-  variable_as_mcmc_list <- mcmc.list(as.mcmc(p_cap_quarters[1,]), as.mcmc(p_cap_quarters[2,]), as.mcmc(p_cap_quarters[3,]), as.mcmc(p_cap_quarters[4,]))
-  GR <- gelman.diag(variable_as_mcmc_list)
+  GR <- gelman.diag(sim.sample[,paste("sigma.sq.amp[",dye,"]",sep="")])
   GR_A_sigma[locus] <- GR[[1]][1]
   graph_values[graph_counter] <- GR_A_sigma[locus]
   graph_labels[graph_counter] <- paste("Locus amp var (", LocusNames[locus], ")", sep="")
