@@ -32,5 +32,5 @@ waic.unif
 
 #saves to text file
 pathToFile <- paste(saveDir, "WAICresults.txt", sep="")
-write.table(waic.unif[[1]],file=pathToFile,col.names=F,quote=F)
+write.table(waic.unif[[1]],file=pathToFile,col.names=TRUE,quote=F)
 }
