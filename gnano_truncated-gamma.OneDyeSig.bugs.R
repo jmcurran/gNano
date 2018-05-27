@@ -12,7 +12,7 @@ model{
   
   #Dye effect priors
   tau.dye ~ dgamma(0.01, 0.01)
-  sigma.sq.dye <- 1 / tau.dye[f]
+  sigma.sq.dye <- 1 / tau.dye
   
   for(f in 1:(numDyes-1)){
     mu.dye[f] ~ dunif(0, 10)

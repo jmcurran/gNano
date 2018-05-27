@@ -1,7 +1,7 @@
 model{
   #Amplification Priors
   tau.amp ~ dgamma(0.01, 0.01)
-  sigma.sq.amp <- 1 / tau.amp[locus]
+  sigma.sq.amp <- 1 / tau.amp
   for(locus in 1:(numLoci-1)){
     mu.amp[locus] ~ dunif(0, 10)
   }
