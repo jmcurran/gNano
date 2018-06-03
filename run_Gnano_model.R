@@ -10,8 +10,15 @@ bugsData = makeBUGSdata()
 #bugsFile = here("gnano_truncated.bugs.R")
 bugsFile = here(bugs_Model_R_Filename)
 
+##initialises starting values
+chainOneInits = list(tau.amp = rep(1, bugsData$numLoci), tau.dye = rep(1, bugsData$numDyes))
+chainTwoInits = list(tau.amp = rep(1.1, bugsData$numLoci), tau.dye = rep(1.1, bugsData$numDyes))
+chainThreeInits = list(tau.amp = rep(1.2, bugsData$numLoci), tau.dye = rep(1.2, bugsData$numDyes))
+chainFourInits = list(tau.amp = rep(1.3, bugsData$numLoci), tau.dye = rep(1.3, bugsData$numDyes))
+inits = list(chainOneInits, chainTwoInits, chainThreeInits, chainFourInits)
+
 ## compile the model
-sim = jags.model(file = bugsFile, data = bugsData, n.chains = 4)
+sim = jags.model(file = bugsFile, data = bugsData, n.chains = 4, inits=inits)
 
 ## do a bit of burn in - no idea what is sufficient at this point
 system.time(update(sim, 100000))
@@ -30,8 +37,9 @@ createGraphs(sim.sample, saveDir, bugsData)
 
 #run the WAIC
 source("gNano.WAIC.R")
+try(
 calculateWAIC(sim.sample, saveDir, bugsData)
-
+)
 #save summary stats
 simSummary <- summary(sim.sample)
 pathToFile <- paste(saveDir, "simStatsSummary.txt", sep="")
