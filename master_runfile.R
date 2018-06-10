@@ -31,3 +31,11 @@ run_Gnano_model("gnano_truncated-gamma.OneDyeSig.bugs.R", "fullGammaConstantDyeS
 #the gamma full constantAmpAndDyeSigma model
 run_Gnano_model("gnano_truncated-gamma.OneAmpAndDyeSig.bugs.R", "fullGammaConstantAmpAndDyeSigma")
 
+#the gamma full var=lambda/sqrt(T) model
+run_Gnano_model("gnano_unif.Tsqrt.bugs.R", "Tsqrt")
+
+#the gamma full var=lambda/ln(T) model
+run_Gnano_model("gnano_unif.Tln.bugs.R", "Tln")
+
+#the gamma full var=lambda/ln^2 model
+run_Gnano_model("gnano_unif.Tsqd.bugs.R", "Tsqd")

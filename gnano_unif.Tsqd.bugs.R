@@ -22,9 +22,9 @@ model{
   #final dye effect is calculated so that geomean = 1
   mu.dye[numDyes] <- 1/prod(mu.dye[1:(numDyes-1)])
   
-  #Lambda prior
-  lambda ~ dunif(1, 500)
-  
+  #Lambda prior (needs to be large range when Tind included)
+  lambda ~ dunif(1, 10000)
+
   #Profiles
   for(c in 1:numProfiles){
     #draw a locus amp efficiency for each locus
@@ -40,8 +40,8 @@ model{
     #choose a template for each contributor
     T[c] ~ dunif(0, S)
     #peak height variance for this profile
-    Var[c] <- lambda / T[c]
-    Prec[c] <- T[c] / lambda
+    Var[c] <- lambda / T[c]^2
+    Prec[c] <- 1 / Var[c]
     
     #generate expected heights for each allele at each locus in each profile
     for(locus in use_loci[locStart[c]:locEnd[c]]){ 
