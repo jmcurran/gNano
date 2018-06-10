@@ -3,6 +3,10 @@ source("run_Gnano_model.R")
 #the uniform full model
 run_Gnano_model("gnano_truncated.bugs.R", "uniform")
 
+#the uniform full model modified dye prior
+run_Gnano_model("gnano_truncated_uniform_mod.bugs.R", "uniform_mod")
+
+
 #the gamma full model
 run_Gnano_model("gnano_truncated-gamma.bugs.R", "fullGamma")
 
