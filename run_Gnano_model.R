@@ -11,21 +11,22 @@ bugsData = makeBUGSdata()
 bugsFile = here(bugs_Model_R_Filename)
 
 ##initialises starting values
-chainOneInits = list(tau.amp = rep(1, bugsData$numLoci), tau.dye = rep(1, bugsData$numDyes))
-chainTwoInits = list(tau.amp = rep(1.1, bugsData$numLoci), tau.dye = rep(1.1, bugsData$numDyes))
-chainThreeInits = list(tau.amp = rep(1.2, bugsData$numLoci), tau.dye = rep(1.2, bugsData$numDyes))
-chainFourInits = list(tau.amp = rep(1.3, bugsData$numLoci), tau.dye = rep(1.3, bugsData$numDyes))
-inits = list(chainOneInits, chainTwoInits, chainThreeInits, chainFourInits)
+#chainOneInits = list(tau.amp = rep(1, bugsData$numLoci), tau.dye = rep(1, bugsData$numDyes))
+#chainTwoInits = list(tau.amp = rep(1.1, bugsData$numLoci), tau.dye = rep(1.1, bugsData$numDyes))
+#chainThreeInits = list(tau.amp = rep(1.2, bugsData$numLoci), tau.dye = rep(1.2, bugsData$numDyes))
+#chainFourInits = list(tau.amp = rep(1.3, bugsData$numLoci), tau.dye = rep(1.3, bugsData$numDyes))
+#inits = list(chainOneInits, chainTwoInits, chainThreeInits, chainFourInits)
 
 ## compile the model
-sim = jags.model(file = bugsFile, data = bugsData, n.chains = 4, inits=inits)
+#sim = jags.model(file = bugsFile, data = bugsData, n.chains = 4, inits=inits)
+sim = jags.model(file = bugsFile, data = bugsData, n.chains = 4)
 
 ## do a bit of burn in - no idea what is sufficient at this point
 system.time(update(sim, 100000))
 #system.time(update(sim, 100))
 
 ## The parameters are we interested
-parameters = c("pred", "lambda", "mu.dye", "mu.amp", "sigma.sq.dye", "sigma.sq.amp", "T", "loglik")
+parameters = c("pred", "lambda", "mu.dye", "mu.amp", "sigma.sq.dye", "sigma.sq.amp", "T", "loglik", "Tind")
 ## run the model
 sim.sample = coda.samples(model = sim, variable.names = parameters, n.iter = 50000, thin = 50)
 #sim.sample = coda.samples(model = sim, variable.names = parameters, n.iter = 500, thin = 5)

@@ -23,6 +23,9 @@ for (chain in 1:number_chains){
    }
  }
 }
+#replaces -Inf values with zero
+#logLik.unif <- replace(logLik.unif, logLik.unif==-Inf, 0)
+
 #calculates WAIC, again summing log-likelihoods across alleles at a locus
 waic.unif <- waic(apply(logLik.unif, c(1,2,3), sum, na.rm=TRUE))
 
