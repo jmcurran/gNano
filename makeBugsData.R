@@ -1,12 +1,16 @@
-makeBUGSdata = function(){
+makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", 
+                                       "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
+                                       "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")){
   #reads in file
   rawData = read.csv(here("Duncan/CH_GNano_ForR.csv"), stringsAsFactors = FALSE)
   
   #array of locus names
-  LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", 
-                 "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
-                 "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")
-  numLoci = length(LocusNames)
+  allLoci = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", 
+              "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
+              "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")
+  
+  Loci = match.arg(LocusNames, allLoci, several.ok = TRUE)
+  numLoci = length(Loci)
   
   #Number of samples
   numSamples =  max(rawData[ ,2])
@@ -31,52 +35,92 @@ makeBUGSdata = function(){
   
   
   # library(sqldf)
-  # library(tidyverse)
-  # 
-  # sampleNames = rawData %>% 
-  #   select(Sample) %>% 
-  #   unique() #%>% 
-  # 
+  library(tidyverse)
   
-  
-  #size of the raw data set
-  rawDataLength = nrow(rawData)
-  
-  for (r in 1:rawDataLength){
-    #capturing data from rawData
-    rawDataProfile = rawData[r, 2]
-    rawDataLocus = rawData[r, 4]
-    rawDataDye1 = rawData[r, 7]
-    rawDataDye2 = rawData[r, 9]
-    rawDataAlleleHeight1 = rawData[r, 11]
-    rawDataAlleleHeight2 = rawData[r, 13]
-    
-    #determines if homozygous
-    rawDataAllele1 = rawData[r, 10]
-    rawDataAllele2 = rawData[r, 12]
-    
-    ## This will evaluate as TRUE or FALSE so you don't need the if
-    profileHomozygote[rawDataProfile, rawDataLocus]  = rawDataAllele1 == rawDataAllele2
-    X[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){2}else{1}
-    if(rawDataAllele1 %in% dyeNames){
-      alleles_at_locus[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){1}else{2}
-    }
-    
-    #writing heights to multi-dimensional height array
-    profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
-    if(profileHomozygote[rawDataProfile, rawDataLocus] == FALSE){
-      profileData[rawDataProfile, rawDataLocus, 2] = rawDataAlleleHeight2
-    }
-    
-    #writing dyes to multi-dimensional height array
-    profileDyes[rawDataProfile, rawDataLocus, 1] = if(rawDataDye1 %in% 1:4){rawDataDye1}else{NA}
-    if(!profileHomozygote[rawDataProfile, rawDataLocus]){
-      profileDyes[rawDataProfile, rawDataLocus, 2] = if(rawDataDye2 %in% 1:4){rawDataDye2}else{NA}
-    }
+  loc = 1 ## this counter is to make sure we insert data contiguously
+  for(locus in Loci){
+     locusData = rawData %>% 
+       filter(LocusName == locus)
+     
+     locusData = locusData %>% 
+       mutate(isHom = Allele1 == Allele2,
+              allelesAtLocus = ifelse(Allele1 == Allele2, 1, 2),
+              dye1 = ifelse(Dye1No %in% 1:4, Dye1No, NA),
+              dye2 = ifelse(Dye2No %in% 1:4, Dye2No, NA))
+     
+     ## set profileHomozygous, alleles_at_Locus, X
+     
+     sampleNums = locusData %>% pull(SampleNo)
+     
+     profileHomozygote[sampleNums, loc] = locusData %>% pull(isHom)
+     alleles_at_locus[sampleNums, loc]  = locusData %>% pull(allelesAtLocus) 
+     X[sampleNums, loc] = ifelse(locusData %>% pull(allelesAtLocus) == 2, 1, 2)
+     profileDyes[sampleNums, loc, 1] = locusData %>% pull(dye1)
+     
+     ## set profileData
+     
+     profileData[sampleNums, loc, 1] = locusData %>% pull(Height1)
+     
+     locusData2 = locusData %>% 
+       filter(!isHom)
+     
+     sampleNums2 = locusData2 %>% 
+       pull(SampleNo)
+     
+     profileData[sampleNums2, loc, 2] = locusData2 %>% pull(Height2)
+     profileDyes[sampleNums2, loc, 2] = locusData2 %>% pull(dye2)
+       
+     
+     #size of the raw data set
+     # rawDataLength = nrow(rawData)
+     # 
+     # for (r in 1:rawDataLength){
+     #   #capturing data from rawData
+     #   rawDataProfile = rawData[r, 2]
+     #   rawDataLocus = rawData[r, 4]
+     #   rawDataDye1 = rawData[r, 7]
+     #   rawDataDye2 = rawData[r, 9]
+     #   rawDataAlleleHeight1 = rawData[r, 11]
+     #   rawDataAlleleHeight2 = rawData[r, 13]
+     #   
+     #   #determines if homozygous
+     #   rawDataAllele1 = rawData[r, 10]
+     #   rawDataAllele2 = rawData[r, 12]
+     #   
+     #   ## This will evaluate as TRUE or FALSE so you don't need the if
+     #   profileHomozygote[rawDataProfile, rawDataLocus]  = rawDataAllele1 == rawDataAllele2
+     #   X[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){2}else{1}
+     #   if(rawDataAllele1 %in% dyeNames){
+     #     alleles_at_locus[rawDataProfile, rawDataLocus] =  if(rawDataAllele1 == rawDataAllele2){1}else{2}
+     #   }
+     #   
+     #   #writing heights to multi-dimensional height array
+     #   profileData[rawDataProfile, rawDataLocus, 1] = rawDataAlleleHeight1
+     #   if(profileHomozygote[rawDataProfile, rawDataLocus] == FALSE){
+     #     profileData[rawDataProfile, rawDataLocus, 2] = rawDataAlleleHeight2
+     #   }
+     #   
+     #   #writing dyes to multi-dimensional height array
+     #   profileDyes[rawDataProfile, rawDataLocus, 1] = if(rawDataDye1 %in% 1:4){rawDataDye1}else{NA}
+     #   if(!profileHomozygote[rawDataProfile, rawDataLocus]){
+     #     profileDyes[rawDataProfile, rawDataLocus, 2] = if(rawDataDye2 %in% 1:4){rawDataDye2}else{NA}
+     #   }
+     # }
+   
+     
   }
+   
+   
   
-  locusNo = rawData[, 4]
-  sampleNo = rawData[, 2]
+  
+  
+  
+  locusNo = rawData  %>%  
+    filter(LocusName %in% Loci) %>% 
+    pull(LocusNo)
+  sampleNo = rawData  %>%  
+    filter(LocusName %in% Loci) %>% 
+    pull(SampleNo)
   
   ## Added by Mikkel
   if (FALSE) {
