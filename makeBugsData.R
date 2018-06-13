@@ -107,6 +107,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
      #   }
      # }
    
+     loc= loc + 1
      
   }
    
