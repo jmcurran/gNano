@@ -1,3 +1,5 @@
+library(tidyverse)
+
 makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2", "Y2", "Y3", "R3", "R4", "Y4", 
                                        "Y5", "R5", "Y6", "H1", "B1", "S1", "V1", "R6", "Y7", "Y8", "R7", "S2", 
                                        "R8", "Y9", "S3", "R9", "Y10", "R10", "Y11")){
@@ -12,17 +14,53 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   Loci = match.arg(LocusNames, allLoci, several.ok = TRUE)
   numLoci = length(Loci)
   
+  ## Filter the rawData down to just the loci we want to use
+  rawData = rawData %>% 
+    filter(LocusName %in% Loci)
+  
   #Number of samples
   numSamples =  max(rawData[ ,2])
   
-  #Dye names
-  dyeNames = c("A", "G", "C", "T")
   
-  #number of dyes
-  numDyes = length(dyeNames)
   
-  #dye colours
-  dyeColours = c("green", "blue", "black", "red")
+  usedDyes = rawData %>% 
+    select(Dye1No,Dye2No) %>% 
+    distinct() %>% 
+    gather() %>% 
+    pull(value) %>% 
+    unique()
+  
+  ## Number of dyes
+  numDyes = length(usedDyes)
+  
+  if(numDyes != 4){
+    if(numDyes %in% c(1,3)){
+      stop("There are 1 or 3 dyes in use and I am not sure this should happen")
+    }
+    
+    ## This is probably stupidly complicated but I couldn't get it to work
+    ## any other way. It writes the code for two mutate operations and 
+    ## then evaluates it.
+    
+    for(i in 1:2){
+      mutateStr = paste0("Dye", 
+                         i, 
+                         "No = recode(Dye", 
+                         i, 
+                         "No, ", 
+                         paste0(sprintf("'%d'  = ", usedDyes), 1:2, collapse = ","), ")") 
+      mutateStr = paste0("rawData = rawData %>% mutate(", mutateStr, ")")
+      eval(parse(text = mutateStr))
+    }
+    
+  }
+
+  ## Dye names
+  dyeNames = c("A", "G", "C", "T")[usedDyes]
+  
+    
+  ## Dye colours
+  dyeColours = c("green", "blue", "black", "red")[usedDyes]
   
   #heights formatted into array [sample][locus][allele] 
   profileData = pred = loglik = array(data = NA, dim =c(numSamples, numLoci, 2))
@@ -70,6 +108,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
      profileData[sampleNums2, loc, 2] = locusData2 %>% pull(Height2)
      profileDyes[sampleNums2, loc, 2] = locusData2 %>% pull(dye2)
        
+     loc <- loc + 1L
      
      #size of the raw data set
      # rawDataLength = nrow(rawData)
@@ -107,7 +146,6 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
      #   }
      # }
    
-     loc= loc + 1
      
   }
    
@@ -135,7 +173,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
     rm_is <- c() # stupid, but easy and fast enough for this
     for (i in seq_len(dim(profileData)[1])) { # loop over profiles
       #i <- 1
-      if (any(apply(profileData[i,,], 1, function(x) all(is.na(x))))) {
+      if (any(apply(profileData[i,Loci,], 1, function(x) all(is.na(x))))) {
         rm_is <- c(rm_is, i)
       }
     }
@@ -159,8 +197,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   use_loci <- vector("list", dim(profileData)[1])
   for (i in seq_len(dim(profileData)[1])) { # loop over profiles
     #i <- 1
-    #missing_loci[[i]] <- which(apply(profileData[i,,], 1, function(x) all(is.na(x))))
-    use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
+    use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
   }
   #missing_loci
   
@@ -169,7 +206,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   locStart = c(1, locOffset[-length(locOffset)] + 1)
   locEnd = locStart + numSampleLoci - 1
   use_loci = unlist(use_loci)
-
+  
   
   # I want to return every bit of data I KNOW about
   # so all observations and all constants
