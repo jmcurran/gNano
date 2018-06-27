@@ -7,13 +7,13 @@ run_Gnano_model <- function(bugs_Model_R_Filename, model_descriptor, nChains = 4
   source("makeBugsData.R")
   
   #creates datafile
-  bugsData = makeBUGSdata()
+  bugsData = makeBUGSdata("K1")
   
   #bugsFile = here("gnano_truncated.bugs.R")
   bugsFile = here(bugs_Model_R_Filename)
   
-  inits = list(list(mu.dye = rep(1, 4), mu.amp = rep(1, 31),
-                    tau.dye = rep(1,4, tau.amp = rep(1, 31))))
+  inits = list(list(mu.dye = rep(1, bugsData$numDyes), mu.amp = rep(1, bugsData$numLoci),
+                    tau.dye = rep(1,bugsData$numDyes), tau.amp = rep(1, bugsData$numLoci)))
   
   ## compile the model
   system.time({sim = jags.model(file = bugsFile,
@@ -26,7 +26,7 @@ run_Gnano_model <- function(bugs_Model_R_Filename, model_descriptor, nChains = 4
   #system.time(update(sim, 100))
   
   ## The parameters are we interested
-  parameters = c("pred",
+  parameters = c("mu", "pred",
                  "lambda",
                  "mu.dye",
                  "mu.amp",
