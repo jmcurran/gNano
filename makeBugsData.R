@@ -198,6 +198,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   for (i in seq_len(dim(profileData)[1])) { # loop over profiles
     #i <- 1
     use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
+    #use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
   }
   #missing_loci
   
@@ -216,7 +217,7 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
     numDyes = numDyes,
     S = 30000,
     profileDyes = profileDyes,
-    P = profileData,
+    P = log(profileData),
     use_loci = use_loci,
     locStart = locStart,
     locEnd = locEnd,

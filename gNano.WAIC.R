@@ -22,16 +22,16 @@ calculateWAIC <- function(sim.sample, saveDir, bugsData) {
   for (chain in 1:number_chains) {
     for (sample in 1:NumberSamples) {
       for (locus in 1:NumberLoci) {
-        if (!is.na(alleles_at_locus[sample, locus])) {
-          for (allele in 1:alleles_at_locus[sample, locus]) {
+        for (allele in 1:alleles_at_locus[sample, locus]) {
+          if (!is.na(profileData[sample, locus, allele])) { 
             logLik.unif[chain, , sample, locus, allele] <-
-              sim.sample[[chain]][, paste("loglik[", sample, ",", locus, ",", allele, "]", sep =
-                                            "")]
-          }
+              sim.sample[[chain]][, paste("loglik[", sample, ",", locus, ",", allele, "]", sep ="")]
+          }    
         }
       }
     }
   }
+  
   #calculates WAIC, again summing log-likelihoods across alleles at a locus
   waic.unif <- waic(apply(logLik.unif, c(1, 2, 3), sum, na.rm = TRUE))
   

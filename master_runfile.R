@@ -7,7 +7,7 @@ run_Gnano_model("gnano_truncated.bugs.R", "uniform")
 run_Gnano_model("gnano_truncated_uniform_mod.bugs.R", "uniform_mod")
 
 #the normal full model modified dye prior
-run_Gnano_model("gnano_normal.bugs.R", "normal", 1)
+run_Gnano_model("gnano_normal.bugs.R", "normal")
 
 
 #the gamma full model

@@ -1,11 +1,12 @@
 createGraphs <- function(sim.sample, saveDir, bugsData) {
   #creates the directory if it doesn't already exist
-  if (file.exists(saveDir)) {
+  if (dir.exists(saveDir)) {
     #do nothing
   } else {
     #create it
     dir.create(file.path(saveDir))
   }
+  
   
   ####### setting up the variables ##########
   NumberLoci <- bugsData$numLoci
@@ -99,15 +100,15 @@ createGraphs <- function(sim.sample, saveDir, bugsData) {
   E <- array(NA, dim = c(NumberSamples, NumberLoci, 2))
   for (sample in 1:NumberSamples) {
     for (locus in 1:NumberLoci) {
-      if (!is.na(alleles_at_locus[sample, locus])) {
-        for (allele in 1:alleles_at_locus[sample, locus]) {
+      for (allele in 1:alleles_at_locus[sample, locus]) {
+        if (!is.na(profileData[sample, locus, allele])) {  
           E[sample, locus, allele] <-
-            mean(sim.sample[[1]][, paste("pred[", sample, ",", locus, ",", allele, "]", sep =
-                                           "")])
+            mean(sim.sample[[1]][, paste("pred[", sample, ",", locus, ",", allele, "]", sep ="")])
         }
       }
     }
   }
+  
   T <- array(1, dim = c(NumberSamples))
   for (sample in 1:NumberSamples) {
     T[sample] <- mean(sim.sample[[1]][, paste("T[", sample, "]", sep = "")])
