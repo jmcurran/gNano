@@ -29,6 +29,8 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
     gather() %>% 
     pull(value) %>% 
     unique()
+  #gets rid of negative dye values
+  usedDyes <- usedDyes[usedDyes > 0]
   
   ## Number of dyes
   numDyes = length(usedDyes)
@@ -197,8 +199,8 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   use_loci <- vector("list", dim(profileData)[1])
   for (i in seq_len(dim(profileData)[1])) { # loop over profiles
     #i <- 1
-    use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
-    #use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
+    #use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
+    use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
   }
   #missing_loci
   
