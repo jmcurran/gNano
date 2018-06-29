@@ -10,7 +10,8 @@ run_Gnano_model <- function(bugs_Model_R_Filename, model_descriptor) {
   nChains = 4
   
   #creates datafile
-  bugsData = makeBUGSdata("K1")
+  #bugsData = makeBUGSdata("K1")
+  bugsData = makeBUGSdata()
   
   #bugsFile = here("gnano_truncated.bugs.R")
   bugsFile = here(bugs_Model_R_Filename)
