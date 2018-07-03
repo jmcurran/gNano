@@ -6,7 +6,7 @@ library(rjags)
 source("makeBugsData.R")
 
 #creates datafile
-bugsData = makeBUGSdata("K1")
+bugsData = makeBUGSdata(c("K1", "M1"))
 nChains = 1
 
 bugsFile = here("gnano_normal.bugs.R")
@@ -64,3 +64,10 @@ simSummary <- summary(sim.sample)
 #             file = pathToFile,
 #             col.names = TRUE,
 #             quote = F)
+
+i = grep("pred" ,rownames(simSummary$statistics))
+yhat = simSummary$statistics[i,1]
+obs = c(bugsData$P[,,1], bugsData$P[,,2])
+obs = obs[!is.na(obs)]
+
+
