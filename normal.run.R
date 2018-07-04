@@ -81,6 +81,50 @@ obs = obs[!is.na(obs)]
 
 plot(obs,yhat)
 
-#i = grep("alpha.amp", colnames(sim.sample[[1]]))
-#plot(sim.sample[[1]][,i])
+i = grep("mu.dye", colnames(sim.sample[[1]]))
+plot(sim.sample[[1]][,i])
+
+
+################# 
+#DUNCAN - this is where we were when you left 4/7/18
+#
+
+bugsData = makeBUGSdata()
+
+obs = NULL
+loc = NULL
+prof = NULL
+for(allele in 1:2){
+  for(locus in 1:bugsData$numLoci){
+    loc = c(loc, rep(locus, 102))
+    obs = c(obs, bugsData$P[,locus,allele])
+    prof = c(prof, 1:102)
+  }
+}
+
+loc = as.factor(loc[!is.na(obs)])
+prof = as.factor(prof[!is.na(obs)])
+obs = obs[!is.na(obs)]
+
+## This model has a locus effect, and it treats the profile as a random effect
+fit = aov(obs ~ locus + Error(prof))
+summary(fit) ## and this shows we're well-justified to say there is a locus effect.
+
+###########################################
+
+bugsData = list(y = obs, locus = loc, profile = prof, N = length(obs),
+                numLoci = 31, numProfiles = 102)
+nChains = 1
+
+bugsFile = here("simple.bugs.R")
+
+## compile the model
+system.time({sim = jags.model(file = bugsFile,
+                              data = bugsData,
+                              n.chains = nChains)})
+update(sim, 10000)
+parameters = c("Mu.locus", "mu.locus")
+sim.sample = coda.samples(sim, parameters, n.iter = 1000)
+simSummary = summary(sim.sample)
+
 
