@@ -36,9 +36,9 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   numDyes = length(usedDyes)
   
   if(numDyes != 4){
-    if(numDyes %in% c(1,3)){
-      stop("There are 1 or 3 dyes in use and I am not sure this should happen")
-    }
+    # if(numDyes %in% c(1,3)){
+    #   stop("There are 1 or 3 dyes in use and I am not sure this should happen")
+    # }
     
     ## This is probably stupidly complicated but I couldn't get it to work
     ## any other way. It writes the code for two mutate operations and 
@@ -199,7 +199,10 @@ makeBUGSdata = function(LocusNames = c("K1", "M1", "R1", "K2", "Y1", "M2", "R2",
   use_loci <- vector("list", dim(profileData)[1])
   for (i in seq_len(dim(profileData)[1])) { # loop over profiles
     #i <- 1
-    use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
+    #use_loci[[i]] <- which(!apply(profileData[i,,,drop = FALSE], 1, function(x) all(is.na(x))))
+    
+    # i'th observation, only consider 1st allele
+    use_loci[[i]] <- which(!is.na(profileData[i,,1]))
     #use_loci[[i]] <- which(!apply(profileData[i,,], 1, function(x) all(is.na(x))))
   }
   #missing_loci

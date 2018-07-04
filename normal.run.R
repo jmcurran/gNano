@@ -6,7 +6,7 @@ library(rjags)
 source("makeBugsData.R")
 
 #creates datafile
-bugsData = makeBUGSdata(c("K1", "M1"))
+bugsData = makeBUGSdata(c("R1", "K2"))
 nChains = 1
 
 bugsFile = here("gnano_normal.bugs.R")
@@ -21,7 +21,9 @@ system.time(update(sim, 100000))
 #system.time(update(sim, 100))
 
 ## The parameters are we interested
-parameters = c("pred",
+parameters = c("alpha.amp",
+               "beta.dye",
+               "pred",
                "lambda",
                "mu.dye",
                "mu.amp",
@@ -67,7 +69,18 @@ simSummary <- summary(sim.sample)
 
 i = grep("pred" ,rownames(simSummary$statistics))
 yhat = simSummary$statistics[i,1]
-obs = c(bugsData$P[,,1], bugsData$P[,,2])
+obs = c(bugsData$P[,1,1], bugsData$P[,2,1], bugsData$P[,1,2], bugsData$P[,2,2])
+
+obs = NULL
+for(allele in 1:2)
+  for(locus in 1:bugsData$numLoci){
+    obs = c(obs, bugsData$P[,locus,allele])
+  }
+
 obs = obs[!is.na(obs)]
 
+plot(obs,yhat)
+
+#i = grep("alpha.amp", colnames(sim.sample[[1]]))
+#plot(sim.sample[[1]][,i])
 

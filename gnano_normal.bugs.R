@@ -2,13 +2,17 @@ model{
   #Amplification Priors
   Mu.amp ~ dnorm(0, 0.000001)
   for(locus in 1:numLoci){
-    mu.amp[locus] ~ dnorm(Mu.amp, 0.000001)
+    mu.amp[locus] ~ dnorm(0, 0.000001)
+    #alpha.amp[locus] ~ dnorm(0, 0.000001)
+    #mu.amp[locus] = Mu.amp + alpha.amp[locus]
   }
   
   #Dye effect priors
   Mu.dye ~ dnorm(0, 0.000001)
   for(f in 1:numDyes){
-    mu.dye[f] ~ dnorm(Mu.dye, 0.000001)
+    mu.dye[f] ~ dnorm(0, 0.000001)
+    #beta.dye[f] ~ dnorm(Mu.dye, 0.00001)
+    #mu.dye[f] = Mu.dye + beta.dye[f]
   }
   
   #Lambda prior
