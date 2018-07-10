@@ -136,6 +136,11 @@ library(Hmisc)
 errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
        xlab = "Locus", ylab = "Locus Effects")
 
+i = grep("^(mu).*$", rownames((simSummary$statistics)))
+fitted = simSummary$statistics[i,1] ## means
+plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
+abline(c(0,1), col = "red")
+
          
 
 
