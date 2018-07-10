@@ -101,18 +101,20 @@ for(allele in 1:2){
     prof = c(prof, 1:102)
   }
 }
-
-loc = as.factor(loc[!is.na(obs)])
-prof = as.factor(prof[!is.na(obs)])
-obs = obs[!is.na(obs)]
+freq.df = data.frame(loc = as.factor(loc[!is.na(obs)]),
+                     prof = as.factor(prof[!is.na(obs)]),
+                     obs = obs[!is.na(obs)])
 
 ## This model has a locus effect, and it treats the profile as a random effect
-fit = aov(obs ~ locus + Error(prof))
+fit = aov(obs ~ loc + Error(prof), data = freq.df)
 summary(fit) ## and this shows we're well-justified to say there is a locus effect.
+rm(obs)
+rm(loc)
+rm(prof)
 
 ###########################################
 
-bugsData = list(y = obs, locus = loc, profile = prof, N = length(obs),
+bugsData = list(y = freq.df$obs, locus = freq.df$loc, profile = freq.df$prof, N = length(freq.df$obs),
                 numLoci = 31, numProfiles = 102)
 nChains = 1
 
@@ -123,8 +125,14 @@ system.time({sim = jags.model(file = bugsFile,
                               data = bugsData,
                               n.chains = nChains)})
 update(sim, 10000)
-parameters = c("Mu.locus", "mu.locus")
+parameters = c("Mu", "alpha.locus", "mu", "sigma")
+#parameters = c("Mu","sigma")
 sim.sample = coda.samples(sim, parameters, n.iter = 1000)
 simSummary = summary(sim.sample)
+
+i = grep("^(Mu|alpha).*$", rownames((simSummary$statistics)))
+alpha.med = simSummary$quantiles[i,3][-1]
+
+         
 
 
