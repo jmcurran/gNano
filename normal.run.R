@@ -125,13 +125,16 @@ system.time({sim = jags.model(file = bugsFile,
                               data = bugsData,
                               n.chains = nChains)})
 update(sim, 10000)
-parameters = c("Mu", "alpha.locus", "mu", "sigma")
+parameters = c("Mu", "alpha.locus", "mu")
 #parameters = c("Mu","sigma")
 sim.sample = coda.samples(sim, parameters, n.iter = 1000)
 simSummary = summary(sim.sample)
 
-i = grep("^(Mu|alpha).*$", rownames((simSummary$statistics)))
-alpha.med = simSummary$quantiles[i,3][-1]
+i = grep("^(alpha).*$", rownames((simSummary$statistics)))
+
+library(Hmisc)
+errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
+       xlab = "Locus", ylab = "Locus Effects")
 
          
 

@@ -10,10 +10,9 @@ model{
   beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
 
   Mu ~ dnorm(0, 0.00001)
-  tau ~ dgamma(0.001, 0.001)
-  sigma = 1/sqrt(tau)
   for(i in 1:N){
-    y[i] ~ dnorm(mu[i], tau)
+    y[i] ~ dnorm(mu[i], tau[i])
+    tau[i] ~ dgamma(0.001, 0.001)
     mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]]
   }
 }
