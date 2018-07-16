@@ -94,25 +94,30 @@ bugsData = makeBUGSdata()
 obs = NULL
 loc = NULL
 prof = NULL
+dye = NULL
 for(allele in 1:2){
   for(locus in 1:bugsData$numLoci){
     loc = c(loc, rep(locus, 102))
     obs = c(obs, bugsData$P[,locus,allele])
     prof = c(prof, 1:102)
+    dye = c(dye, bugsData$profileDyes[,locus,allele])
   }
 }
 freq.df = data.frame(loc = as.factor(loc[!is.na(obs)]),
                      prof = as.factor(prof[!is.na(obs)]),
-                     obs = obs[!is.na(obs)])
+                     obs = obs[!is.na(obs)],
+                     dye = dye[!is.na(obs)])
 
 ## This model has a locus effect, and it treats the profile as a random effect
-fit = aov(obs ~ loc + Error(prof), data = freq.df)
+fit = aov(obs ~ loc + dye + Error(prof), data = freq.df)
 summary(fit) ## and this shows we're well-justified to say there is a locus effect.
 rm(obs)
 rm(loc)
 rm(prof)
 
-###########################################
+
+
+#################### the simple bugs version with only locus and profile effects #######################
 
 bugsData = list(y = freq.df$obs, locus = freq.df$loc, profile = freq.df$prof, N = length(freq.df$obs),
                 numLoci = 31, numProfiles = 102)
@@ -136,6 +141,41 @@ library(Hmisc)
 errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
        xlab = "Locus", ylab = "Locus Effects")
 
+i = grep("^(mu).*$", rownames((simSummary$statistics)))
+fitted = simSummary$statistics[i,1] ## means
+plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
+abline(c(0,1), col = "red")
+
+################# the simple bugs version with locus, profile and dye effects ##########################
+
+bugsData = list(y = freq.df$obs, locus = freq.df$loc, dye = freq.df$dye, profile = freq.df$prof, N = length(freq.df$obs),
+                numLoci = 31, numProfiles = 102, numDyes = 4)
+nChains = 1
+
+bugsFile = here("simple.bugs.withDye.R")
+
+## compile the model
+system.time({sim = jags.model(file = bugsFile,
+                              data = bugsData,
+                              n.chains = nChains)})
+update(sim, 10000)
+parameters = c("Mu", "alpha.locus", "gamma.dye", "mu")
+sim.sample = coda.samples(sim, parameters, n.iter = 1000)
+simSummary = summary(sim.sample)
+
+#graphing the locus effects
+i = grep("^(alpha).*$", rownames((simSummary$statistics)))
+library(Hmisc)
+errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
+       xlab = "Locus", ylab = "Locus Effects")
+
+#graphing the dye effects
+i = grep("^(gamma).*$", rownames((simSummary$statistics)))
+library(Hmisc)
+errbar(1:numDyes, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
+       xlab = "Dye", ylab = "Dye Effects")
+
+#graphing obs vs expected
 i = grep("^(mu).*$", rownames((simSummary$statistics)))
 fitted = simSummary$statistics[i,1] ## means
 plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
