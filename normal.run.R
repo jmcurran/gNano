@@ -106,7 +106,7 @@ for(allele in 1:2){
 freq.df = data.frame(loc = as.factor(loc[!is.na(obs)]),
                      prof = as.factor(prof[!is.na(obs)]),
                      obs = obs[!is.na(obs)],
-                     dye = dye[!is.na(obs)])
+                     dye = as.factor(dye[!is.na(obs)]))
 
 ## This model has a locus effect, and it treats the profile as a random effect
 fit = aov(obs ~ loc + dye + Error(prof), data = freq.df)
@@ -114,7 +114,7 @@ summary(fit) ## and this shows we're well-justified to say there is a locus effe
 rm(obs)
 rm(loc)
 rm(prof)
-
+rm(dye)
 
 
 #################### the simple bugs version with only locus and profile effects #######################
@@ -172,8 +172,13 @@ errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$qu
 #graphing the dye effects
 i = grep("^(gamma).*$", rownames((simSummary$statistics)))
 library(Hmisc)
+numDyes = 4
 errbar(1:numDyes, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
-       xlab = "Dye", ylab = "Dye Effects")
+       xlab = "Dye", ylab = "Dye Effects",
+       axes = FALSE)
+axis(2)
+axis(1, at = 1:4)
+box()
 
 #graphing obs vs expected
 i = grep("^(mu).*$", rownames((simSummary$statistics)))
@@ -182,5 +187,51 @@ plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
 abline(c(0,1), col = "red")
 
          
+################# the medium bugs version with locus, profile and dye effects ##########################
+
+bugsData = list(y = freq.df$obs, locus = freq.df$loc, dye = freq.df$dye, profile = freq.df$prof, N = length(freq.df$obs),
+                numLoci = 31, numProfiles = 102, numDyes = 4)
+nChains = 1
+
+bugsFile = here("medium.bugs.withDye.R")
+
+## compile the model
+system.time({sim = jags.model(file = bugsFile,
+                              data = bugsData,
+                              n.chains = nChains)})
+update(sim, 10000)
+parameters = c("Mu", "alpha.mu", "alpha.sigma", "alpha.locus", "gamma.dye", "mu")
+sim.sample = coda.samples(sim, parameters, n.iter = 1000)
+simSummary = summary(sim.sample)
+
+#graphing the locus effects
+i = grep("^(alpha\\.locus).*$", rownames((simSummary$statistics)))
+library(Hmisc)
+errbar(1:31, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
+       xlab = "Locus", ylab = "Locus Effects")
+
+#graphing the dye effects
+i = grep("^(gamma).*$", rownames((simSummary$statistics)))
+library(Hmisc)
+numDyes = 4
+errbar(1:numDyes, simSummary$quantiles[i,3], simSummary$quantiles[i,1], simSummary$quantiles[i,5],
+       xlab = "Dye", ylab = "Dye Effects",
+       axes = FALSE)
+axis(2)
+axis(1, at = 1:4)
+box()
+
+#graphing obs vs expected
+i = grep("^(mu).*$", rownames((simSummary$statistics)))
+fitted = simSummary$statistics[i,1] ## means
+plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
+abline(c(0,1), col = "red")
+
+results.df = data.frame(fitted = fitted, observed = bugsData$y)
+
+library(ggplot2)
+library(tidyverse)
+p = results.df %>% ggplot(aes(x = observed, y = fitted)) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
+p + stat_smooth()
 
 
