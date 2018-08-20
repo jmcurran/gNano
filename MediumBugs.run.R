@@ -82,10 +82,14 @@ box()
 #graphing obs vs expected
 i = grep("^(mu).*$", rownames((simSummary$statistics)))
 fitted = simSummary$statistics[i,1] ## means
-plot(fitted~bugsData$y, xlab = "Observed", ylab = "Fitted")
-abline(c(0,1), col = "red")
+plot((fitted - bugsData$y) ~ fitted, xlab = expression(hat(y)), ylab = expression(hat(y)-y))
+h = abline(h = 0, col = "red")
 
 results.df = data.frame(fitted = fitted, observed = bugsData$y)
+results.df = results.df %>% 
+  mutate(residuals = fitted - observed)
+p = results.df %>% ggplot(aes(x = fitted, y = abs(residuals))) + geom_point() + stat_smooth()
+
 
 library(ggplot2)
 library(tidyverse)
