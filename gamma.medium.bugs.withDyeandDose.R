@@ -36,7 +36,7 @@ model{
     
     shape[i] = mu[i]*mu[i]/(s[i]*s[i])
     rate[i] = mu[i]/(s[i]*s[i])
-    y[i] ~ dgamma(mu[i], tau[i])
+    y[i] ~ dgamma(shape[i], rate[i])
     #y[i] ~ dnorm(mu[i], exp(beta.profile[profile[i]])/tau)
   }
 }
