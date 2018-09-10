@@ -17,25 +17,17 @@ model{
   }
   beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
   
-  #gamma is dye effect
-  gamma.mu ~ dnorm(0, 0.000001)
-  gamma.tau ~ dgamma(0.001, 0.001)
-  gamma.sigma = 1 / sqrt(gamma.tau) 
-  for(f in 1:(numDyes - 1)){
-    gamma.dye[f] ~ dnorm(gamma.mu, gamma.tau)
-  }
-  gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+  log.Mu ~ dnorm(0, 0.000001)
+  Mu = exp(log.Mu)
   tau ~ dgamma(0.001, 0.001)
-  s = 1/sqrt(tau[i])
   
-  Mu ~ dnorm(0, 0.00001)
   for(i in 1:N){
-    log.mu[i] = Mu + X[i] + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]]
+    log.mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]]
     mu[i] = exp(log.mu[i])
-    
     rate[i] = mu[i] * tau
-    shape[i] = mu[i] * rate
+    shape[i] = mu[i] *rate[i]
+    
     y[i] ~ dgamma(shape[i], rate[i])
-    #y[i] ~ dnorm(mu[i], exp(beta.profile[profile[i]])/tau)
+    pred[i] ~ dgamma(shape[i], rate[i])
   }
 }

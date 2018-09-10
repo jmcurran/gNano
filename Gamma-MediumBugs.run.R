@@ -82,7 +82,7 @@ box()
 #graphing obs vs expected
 i = grep("^(mu).*$", rownames((simSummary$statistics)))
 fitted = simSummary$statistics[i,1] ## means
-plot((fitted - bugsData$y) ~ fitted, xlab = expression(hat(y)), ylab = expression(hat(y)-y))
+plot(log(fitted) - log(bugsData$y) ~ log(fitted), xlab = expression(hat(y)), ylab = expression(hat(y)-y))
 h = abline(h = 0, col = "red")
 
 results.df = data.frame(fitted = fitted, observed = bugsData$y)
