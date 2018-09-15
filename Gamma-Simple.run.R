@@ -107,11 +107,17 @@ sim.sample = coda.samples(sim, parameters, n.iter = 1000)
 simSummary = summary(sim.sample)
 
 b = grep("^beta.*$", rownames(simSummary$statistics))
-simSummary$quantiles[b,]
+beta.prof = simSummary$quantiles[b,]
+library(Hmisc)
+errbar(1:102, beta.prof[,3], beta.prof[,1], beta.prof[,5])
+abline(col = "red", h = 0)
 
 M = grep("Mu", rownames(simSummary$statistics))
 simSummary$quantiles[M,]
 
-pred = simSummary$statistics[-c(b,M),1]
+pred = sim.sample[[1]][,-c(b,M)]
+
+fit0 = glm(obs~1, data = freq.df, family = Gamma(link=log))
 fit = glm(obs~as.factor(prof), data = freq.df, family = Gamma(link=log))
+
 

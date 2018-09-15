@@ -13,7 +13,7 @@ model{
   tau ~ dgamma(0.001, 0.001)
   
   for(i in 1:N){
-    log.mu[i] = Mu + beta.profile[profile[i]]
+    log.mu[i] = log.Mu + beta.profile[profile[i]]
     mu[i] = exp(log.mu[i])
     rate[i] = mu[i] * tau
     shape[i] = mu[i] *rate[i]
