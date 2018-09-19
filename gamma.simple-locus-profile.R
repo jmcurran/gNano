@@ -18,11 +18,10 @@ model{
   beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
   
   log.Mu ~ dnorm(0, 0.000001)
-  Mu = exp(log.Mu)
   tau ~ dgamma(0.001, 0.001)
   
   for(i in 1:N){
-    log.mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]]
+    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]]
     mu[i] = exp(log.mu[i])
     rate[i] = mu[i] * tau
     shape[i] = mu[i] *rate[i]
