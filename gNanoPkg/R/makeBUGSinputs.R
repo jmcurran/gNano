@@ -230,7 +230,11 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
                                    bDyeEffect = bDyeEffect,
                                    bDoseEffect = bDoseEffect),
       responseDist = responseDist,
-      modelFormula = form
+      modelFormula = form,
+      effects = list(bLocusEffect = bLocusEffect,
+                     bProfileEffect = bProfileEffect,
+                     bDyeEffect = bDyeEffect,
+                     bDoseEffect = bDoseEffect)
     )
   )
 }
