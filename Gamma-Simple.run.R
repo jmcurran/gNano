@@ -120,4 +120,3 @@ pred = sim.sample[[1]][,-c(b,M)]
 fit0 = glm(obs~1, data = freq.df, family = Gamma(link=log))
 fit = glm(obs~as.factor(prof), data = freq.df, family = Gamma(link=log))
 
-

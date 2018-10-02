@@ -252,7 +252,7 @@ system.time({sim = jags.model(file = bugsFile,
                               data = bugsData,
                               n.chains = nChains)})
 update(sim, 10000)
-parameters = c("Mu", "alpha.mu", "alpha.sigma", "alpha.locus", "gamma.dye", "mu", "beta.profile")
+parameters = c("Mu", "alpha.mu", "alpha.sigma", "alpha.locus", "gamma.dye", "mu", "beta.profile", "tau")
 sim.sample = coda.samples(sim, parameters, n.iter = 1000)
 simSummary = summary(sim.sample)
 
@@ -287,8 +287,18 @@ p = results.df %>% ggplot(aes(x = observed, y = fitted)) + geom_point() + geom_a
 p + stat_smooth()
 
 fitted = simSummary$statistics[i,1] ## means
+#getting the template values
+T <- NULL
+E <- NULL
+for (i in 1:length(freq.df$obs)){
+  T <- c(T, mean(sim.sample[[1]][, paste("beta.profile[", as.numeric(freq.df$prof[i]), "]", sep ="")]))
+  E <- c(E, mean(sim.sample[[1]][, paste("mu[", i, "]", sep ="")]))
+}
+T <- exp(T)
+#observed
 O = exp(bugsData$y)
-E = exp(fitted)
-plot(log10(O/E)~O, ylab = "log10(O/E)", xlab = "O")
-
-
+#expected
+E = exp(E)
+#plot(log10(O/E)~E, ylab = "log10(O/E)", xlab = "E")
+plot(log10(O/E)~T, ylab = "log10(O/E)", xlab = "T")
+abline(h=0, col="red")

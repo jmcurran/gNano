@@ -26,16 +26,16 @@ model{
   }
   gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
   tau ~ dgamma(0.001, 0.001)
-  s = 1/sqrt(tau[i])
+  #s = 1/sqrt(tau[i])
   
   Mu ~ dnorm(0, 0.00001)
   for(i in 1:N){
     log.mu[i] = Mu + X[i] + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]]
     mu[i] = exp(log.mu[i])
-    
-    rate[i] = mu[i] * tau
-    shape[i] = mu[i] * rate
+    template[i] = exp(beta.profile[profile[i]])
+    rate[i] = mu[i] * tau * template[i]
+    shape[i] = mu[i] * rate[i]
     y[i] ~ dgamma(shape[i], rate[i])
-    #y[i] ~ dnorm(mu[i], exp(beta.profile[profile[i]])/tau)
+
   }
 }
