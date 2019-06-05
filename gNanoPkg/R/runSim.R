@@ -9,29 +9,44 @@
 #' @param nIter
 
 #' @export
-runSim = function(form, data, simPath, responseDist = c("gamma", "normal"),
+runSim = function(form, data, simPath, simRoot,
+                  responseDist = c("gamma", "normal"),
+                  genInits = FALSE,
                   nUpdate = 10000, nChains = 1, nIter = 1000){
 
   if(!dir.exists(simPath)){
     dir.create(file.path(simPath))
   }
 
-  bugsInput = makeBUGSinputs(form, data, responseDist)
+  bugsInput = makeBUGSinputs(form, data, responseDist, genInits = genInits)
 
   ## Write the BUGS file to disk
-  bugsFile = file.path(simPath, "model.bugs.r")
-  writeLines(bugsInput$bugsModelString, file = bugsFile)
+  bugsFile = file.path(simPath, glue("{simRoot}.bugs.r"))
+  writeLines(bugsInput$bugsModelString, bugsFile)
 
-
-  bugsFile = here("gamma.simple.R")
 
   ## compile the model
-  system.time({sim = jags.model(file = bugsFile,
-                                data = bugsInput$bugsData,
-                                n.chains = nChains)})
+  if(genInits){
+    system.time({sim = jags.model(file = bugsFile,
+                                  data = bugsInput$bugsData,
+                                  inits = list(bugsInput$bugsInits),
+                                  n.chains = nChains)})
+  }else{
+    system.time({sim = jags.model(file = bugsFile,
+                                  data = bugsInput$bugsData,
+                                  n.chains = nChains)})
+  }
   update(sim, nUpdate)
 
-  parameters = c("pred", "log.Mu", "tau")
+  responseDist = match.arg(responseDist)
+
+  parameters = c("pred", "tau")
+
+  if(responseDist == "gamma"){
+    parameters = c(parameters, "log.Mu")
+  }else{
+    parameters = c(parameters, "Mu")
+  }
 
   effects = bugsInput$effects
   if(effects$bLocusEffect){
@@ -50,5 +65,6 @@ runSim = function(form, data, simPath, responseDist = c("gamma", "normal"),
   sim.sample = coda.samples(sim, parameters, n.iter = nIter)
   simSummary = summary(sim.sample)
 
-  save(sim.sample, simSummary, file.path(simPath, "results.rda"))
+  save(sim.sample, simSummary, file = file.path(simPath, glue("{simRoot}.Rda")))
 }
+

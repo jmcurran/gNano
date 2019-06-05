@@ -3,3 +3,4 @@
 export(makeBUGSinputs)
 export(readData)
 export(readRawData)
+export(runSim)

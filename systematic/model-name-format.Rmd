@@ -1,0 +1,26 @@
+---
+title: "Model description"
+author: "James Curran"
+date: "11/12/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Models - distribution of the response
+The first 1-2 letters indicate distribution so that `ln` is log-normal, and `g` is gamma. This is the distribution of the peak height. Note that the log-normal models assume that the peak heights have been log-transformed in the data prep step.
+
+## Models - effects
+Each model is labelled 0-4. The models are incremental in that the effects added in the present model(s) are in the current model. These numbers represent:
+    0.  No effects, just modelling peak heights with one central distribution
+    1.  Profile effect added.
+    2.  Locus effect added.
+    3.  Dye and Dose effects added.
+    4.  Template effect on variance
+
+
+## Results files
+
+The results files will have the same naming convention as the BUGS files.

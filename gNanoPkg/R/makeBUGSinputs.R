@@ -29,7 +29,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
     for(p in 1:(numDyes - 1)){
       gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
     }
-    gamma.dye[numProfiles] = -sum(gamma.dye[1:(numDyes - 1)])
+    gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
   "
 
   if(responseDist == "gamma"){
@@ -45,6 +45,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
         for(i in 1:N){
           y[i] ~ dgamma(shape, rate)
+          pred[i] ~ dgamma(shape, rate)
         }
       }"
     }else{
@@ -52,7 +53,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         {
       "
 
-      meanModel = "y[i] = log.Mu[i]"
+      meanModel = "log.mu[i] = log.Mu"
 
       if(bLocusEffect){
         modelString = paste0(modelString, locusEffects)
@@ -66,11 +67,11 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
       if(bDyeEffect){
         modelString = paste0(modelString, dyeEffects)
-        meanModel = paste0(meanModel, "+ gamma[dye[i]]")
+        meanModel = paste0(meanModel, "+ gamma.dye[dye[i]]")
       }
 
       if(bDoseEffect){
-        meanModel = paste0(meanModel, "+ log(X[i])")
+        meanModel = paste0(meanModel, "+ X[i]")
       }
 
       main = paste0("
@@ -98,13 +99,15 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
           tau ~ dgamma(0.001, 0.001)
           for(i in 1:N){
             log.y[i] ~ dnorm(Mu, tau)
-          }"
+            pred[i] ~ dnorm(Mu, tau)
+          }
+      }"
     }else{
       modelString = "model
         {
       "
 
-      meanModel = "log.y[i] = Mu[i]"
+      meanModel = "mu[i] = Mu"
 
       if(bLocusEffect){
         modelString = paste0(modelString, locusEffects)
@@ -118,11 +121,11 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
       if(bDyeEffect){
         modelString = paste0(modelString, dyeEffects)
-        meanModel = paste0(meanModel, "+ gamma[dye[i]]")
+        meanModel = paste0(meanModel, "+ gamma.dye[dye[i]]")
       }
 
       if(bDoseEffect){
-        meanModel = paste0(meanModel, "+ log(X[i])")
+        meanModel = paste0(meanModel, "+ X[i]")
       }
 
       main = paste0("
@@ -157,7 +160,8 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 #' @examples
 #' data.df = readData()
 #' makeBUGSinputs(data = data.df)
-makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("gamma", "normal")){
+makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("gamma", "normal"),
+                          genInits = FALSE){
   if(!is_formula(form)){
     stop("form must be a formula")
   }
@@ -172,7 +176,7 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
   }
 
   ## lazy - always assume y and number of observations are in the reponse
-  ## will need to hand logs though
+  ## will need to handle logs though
   if(responseDist == "gamma"){
     bugsData = list(y = data.df$obs,
                     N = length(data.df$obs))
@@ -184,24 +188,39 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
 
     bugsData = list(log.y = log(data.df$obs),
                     N = length(data.df$obs),
-                    aveLogPeakHeight = aveLogPeakHeight)
+                    aph = aveLogPeakHeight)
   }
 
   m = match(c("locus", "profile", "dye", "X"), vars)
   names(m) = c("locus", "profile", "dye", "X")
 
+  bugsInits = list()
+
   if(!is.na(m["locus"])){
     bugsData$locus = data.df$loc
     bugsData$numLoci = 31 ## this may not be true
     bLocusEffect = TRUE
+
+    if(genInits){
+      bugsInits$alpha.mu = 0
+      bugsInits$alpha.tau = 1
+      #bugsInits$alpha.locus = rep(0, bugsData$numLoci - 1)
+    }
+
   }else{
     bLocusEffect = FALSE
   }
 
   if(!is.na(m["profile"])){
-    bugsData$profile = data.df$profile
+    bugsData$profile = data.df$prof
     bugsData$numProfiles = 102
     bProfileEffect = TRUE
+
+    if(genInits){
+      bugsInits$beta.mu = 0
+      bugsInits$beta.tau = 1
+      #bugsInits$beta.locus = rep(0, bugsData$numProfiles - 1)
+    }
   }else{
     bProfileEffect = FALSE
   }
@@ -210,6 +229,13 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
     bugsData$dye = data.df$dye
     bugsData$numDyes = 4
     bDyeEffect = TRUE
+
+    if(genInits){
+      bugsInits$gamma.mu = 0
+      bugsInits$gamma.tau = 1
+      #bugsInits$gamma.locus = rep(0, bugsData$numDyes - 1)
+    }
+
   }else{
     bDyeEffect = FALSE
   }
@@ -224,6 +250,7 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
   return(
     list(
       bugsData = bugsData,
+      bugsInits = bugsInits,
       bugsModelString = buildModel(responseDist = responseDist,
                                    bLocusEffect = bLocusEffect,
                                    bProfileEffect = bProfileEffect,

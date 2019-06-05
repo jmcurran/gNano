@@ -5,7 +5,7 @@
 \title{Make BUGS inputs}
 \usage{
 makeBUGSinputs(form = formula("y ~ 1"), data.df,
-  responseDist = c("gamma", "normal"))
+  responseDist = c("gamma", "normal"), genInits = FALSE)
 }
 \arguments{
 \item{form}{a formula}
