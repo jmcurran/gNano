@@ -1,4 +1,5 @@
-buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE, bDyeEffect = FALSE, bDoseEffect = FALSE){
+buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE, bDyeEffect = FALSE, bDoseEffect = FALSE,
+                      bVarEffect = FALSE){
   locusEffects = "
     #alpha is locus effect
     alpha.mu ~ dnorm(0, 0.000001)
@@ -34,20 +35,40 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
   if(responseDist == "gamma"){
     if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
-      modelString = "model
-      {
-        log.Mu ~ dnorm(0, 0.000001)
-        Mu = exp(log.Mu)
-        tau ~ dgamma(0.001, 0.001)
-        s = 1/sqrt(tau)
-        rate = Mu * tau
-        shape = Mu *rate
+      if(!!bVarEffect){
+        modelString = "model
+        {
+          log.Mu ~ dnorm(0, 0.000001)
+          Mu = exp(log.Mu)
+          tau ~ dgamma(0.001, 0.001)
+          s = 1/sqrt(tau)
+          rate = Mu * tau
+          shape = Mu *rate
 
-        for(i in 1:N){
-          y[i] ~ dgamma(shape, rate)
-          pred[i] ~ dgamma(shape, rate)
-        }
-      }"
+          for(i in 1:N){
+            y[i] ~ dgamma(shape, rate)
+            pred[i] ~ dgamma(shape, rate)
+          }
+        }"
+      }else{
+        modelString = "model
+        {
+          log.Mu ~ dnorm(0, 0.000001)
+          Mu = exp(log.Mu)
+          tau0 ~ dgamma(0.001, 0.001)
+          tau1 ~ dgamma(0.001, 0.001)
+
+          for(i in 1:N){
+            y[i] ~ dgamma(shape[i], rate[i])
+            pred[i] ~ dgamma(shape[i], rate[i])
+
+            tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+
+            rate[i] = Mu * tau[i]
+            shape[i] = Mu * rate[i]
+          }
+        }"
+      }
     }else{
       modelString = "model
         {
@@ -74,34 +95,71 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         meanModel = paste0(meanModel, "+ X[i]")
       }
 
-      main = paste0("
-        log.Mu ~ dnorm(0, 0.000001)
-        tau ~ dgamma(0.001, 0.001)
+      main = if(!bVarEffect){
+        paste0("
+          log.Mu ~ dnorm(0, 0.000001)
+          tau ~ dgamma(0.001, 0.001)
 
-        for(i in 1:N){",
-        meanModel,
-        "
-          mu[i] = exp(log.mu[i])
-          rate[i] = mu[i] * tau
-          shape[i] = mu[i] *rate[i]
+          for(i in 1:N){",
+          meanModel,
+          "
+            mu[i] = exp(log.mu[i])
+            rate[i] = mu[i] * tau
+            shape[i] = mu[i] *rate[i]
 
-          y[i] ~ dgamma(shape[i], rate[i])
-          pred[i] ~ dgamma(shape[i], rate[i])
-        }")
+            y[i] ~ dgamma(shape[i], rate[i])
+            pred[i] ~ dgamma(shape[i], rate[i])
+          }")
+      }else{
+        paste0("
+          log.Mu ~ dnorm(0, 0.000001)
+          tau0 ~ dgamma(0.001, 0.001)
+          tau1 ~ dgamma(0.001, 0.001)
+
+          for(i in 1:N){",
+               meanModel,
+               "
+            mu[i] = exp(log.mu[i])
+
+            tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+            rate[i] = mu[i] * tau[i]
+            shape[i] = mu[i] *rate[i]
+
+            y[i] ~ dgamma(shape[i], rate[i])
+            pred[i] ~ dgamma(shape[i], rate[i])
+          }")
+      }
 
       modelString = paste0(modelString, main, "\n}")
     }
   }else{
     if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
-      modelString = "model
-      {
-          Mu ~ dnorm(0, 0.00001)
-          tau ~ dgamma(0.001, 0.001)
-          for(i in 1:N){
-            log.y[i] ~ dnorm(Mu, tau)
-            pred[i] ~ dnorm(Mu, tau)
-          }
-      }"
+      if(!bVarEffect){
+        modelString = "model
+        {
+            Mu ~ dnorm(0, 0.00001)
+            tau ~ dgamma(0.001, 0.001)
+            for(i in 1:N){
+              log.y[i] ~ dnorm(Mu, tau)
+              pred[i] ~ dnorm(Mu, tau)
+            }
+        }"
+      }else{
+        modelString = "model
+        {
+            Mu ~ dnorm(0, 0.00001)
+            tau0 ~ dgamma(0.001, 0.001)
+            tau1 ~ dgamma(0.001, 0.001)
+
+            for(i in 1:N){
+              log.y[i] ~ dnorm(Mu, tau[i])
+
+              tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+
+              pred[i] ~ dnorm(Mu, tau[i])
+            }
+        }"
+      }
     }else{
       modelString = "model
         {
@@ -128,17 +186,33 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         meanModel = paste0(meanModel, "+ X[i]")
       }
 
-      main = paste0("
-                    Mu ~ dnorm(0, 0.000001)
-                    tau ~ dgamma(0.001, 0.001)
+      main = if(!bVarEffect){
+        paste0("
+                      Mu ~ dnorm(0, 0.000001)
+                      tau ~ dgamma(0.001, 0.001)
 
-                    for(i in 1:N){",
-                    meanModel,
-                    "
-                    log.y[i] ~ dnorm(mu[i], aph[profile[i]] * tau)
-                    pred[i] ~ dnorm(mu[i], aph[profile[i]] * tau)
-                    }")
+                      for(i in 1:N){",
+                      meanModel,
+                      "
+                      log.y[i] ~ dnorm(mu[i], tau)
+                      pred[i] ~ dnorm(mu[i], tau)
+                      }")
+        }else{
+          paste0("
+                      Mu ~ dnorm(0, 0.000001)
+                      tau0 ~ dgamma(0.001, 0.001)
+                      tau1~ dgamma(0.001, 0.001)
 
+                      for(i in 1:N){",
+                 meanModel,
+                 "
+                      log.y[i] ~ dnorm(mu[i], tau[i])
+
+                      tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+
+                      pred[i] ~ dnorm(mu[i], tau[i])
+                      }")
+        }
       modelString = paste0(modelString, main, "\n}")
     }
   }
@@ -170,16 +244,22 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
 
   vars = attr(terms(form), "term.labels")
 
-  if(!all(grepl("locus|dye|profile|X", vars))){
-    mismatch = vars[-grep("locus|dye|profile|X", vars)]
+  if(!all(grepl("locus|dye|profile|X|V", vars))){
+    mismatch = vars[-grep("locus|dye|profile|X|V", vars)]
     paste0("The variables : ", mismatch, " don't match the list of allowable variables" )
   }
 
   ## lazy - always assume y and number of observations are in the reponse
   ## will need to handle logs though
   if(responseDist == "gamma"){
+    aveLogPeakHeight = data.df %>%
+      group_by(prof) %>%
+      summarise(alph = mean(log(obs), na.rm = TRUE)) %>%
+      pull(alph)
+
     bugsData = list(y = data.df$obs,
-                    N = length(data.df$obs))
+                    N = length(data.df$obs),
+                    aph = aveLogPeakHeight)
   }else{
     aveLogPeakHeight = data.df %>%
       group_by(prof) %>%
@@ -191,8 +271,8 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
                     aph = aveLogPeakHeight)
   }
 
-  m = match(c("locus", "profile", "dye", "X"), vars)
-  names(m) = c("locus", "profile", "dye", "X")
+  m = match(c("locus", "profile", "dye", "X", "V"), vars)
+  names(m) = c("locus", "profile", "dye", "X", "V")
 
   bugsInits = list()
 
@@ -247,6 +327,14 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
     bDoseEffect = FALSE
   }
 
+  if(!is.na(m["V"])){
+    bugsData$profile = data.df$prof
+    bVarEffect = TRUE
+  }else{
+    bVarEffect = FALSE
+  }
+
+
   return(
     list(
       bugsData = bugsData,
@@ -255,13 +343,15 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
                                    bLocusEffect = bLocusEffect,
                                    bProfileEffect = bProfileEffect,
                                    bDyeEffect = bDyeEffect,
-                                   bDoseEffect = bDoseEffect),
+                                   bDoseEffect = bDoseEffect,
+                                   bVarEffect = bVarEffect),
       responseDist = responseDist,
       modelFormula = form,
       effects = list(bLocusEffect = bLocusEffect,
                      bProfileEffect = bProfileEffect,
                      bDyeEffect = bDyeEffect,
-                     bDoseEffect = bDoseEffect)
+                     bDoseEffect = bDoseEffect,
+                     bVarEffect = bVarEffect)
     )
   )
 }

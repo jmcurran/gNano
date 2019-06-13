@@ -40,7 +40,7 @@ runSim = function(form, data, simPath, simRoot,
 
   responseDist = match.arg(responseDist)
 
-  parameters = c("pred", "tau")
+  parameters = c("pred")
 
   if(responseDist == "gamma"){
     parameters = c(parameters, "log.Mu")
@@ -60,6 +60,14 @@ runSim = function(form, data, simPath, simRoot,
   if(effects$bDyeEffect){
     parameters = c(parameters, "gamma.mu", "gamma.sigma", "gamma.dye")
   }
+
+  if(effects$bVarEffect){
+    parameters = c(parameters, "tau0", "tau1")
+  }else{
+    parameters = c(parameters, "tau")
+  }
+
+
 
 
   sim.sample = coda.samples(sim, parameters, n.iter = nIter)
