@@ -35,7 +35,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
   if(responseDist == "gamma"){
     if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
-      if(!!bVarEffect){
+      if(!bVarEffect){
         modelString = "model
         {
           log.Mu ~ dnorm(0, 0.000001)
