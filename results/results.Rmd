@@ -27,6 +27,7 @@ load("../systematic/g-0.Rda")
 Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier.
 
 ```{r}
+library(rjags)
 g0.df = as.data.frame(as.matrix(sim.sample))
 ```
 
@@ -220,6 +221,7 @@ p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
   
 p
 ```
+
 Plot the observed vs the expected peak heights
 
 ```{r}
@@ -235,5 +237,146 @@ p = plot.df %>%
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(2, 5) +
           ylim(2, 5)
+p
+```
+
+Plot the locus effects by Average Peak Height:
+
+```{r}
+aph = gNano.df %>% 
+  group_by(loc) %>% 
+  summarise(aph = mean(log(obs), na.rm = TRUE)) %>% 
+  pull(aph)
+
+
+meanEffect = g2.df %>% 
+  select(starts_with("alpha.locus")) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  unlist()
+  
+plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+p = plot.df %>% 
+  ggplot(aes(x = aph, y = meanEffect)) + 
+  geom_point(show.legend = FALSE) +
+  geom_smooth()
+
+p
+```
+
+## Model $g_3$ - all other effects except extra variance
+```{r g3, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
+knitr::include_graphics("g3.png")
+```
+
+Dye effects
+
+```{r}
+load("../systematic/g-3.Rda")
+g3.df = data.frame(as.matrix(sim.sample[[1]]))
+
+lb = g3.df %>% 
+    select(starts_with("gamma.dye")) %>% 
+    summarise_all(quantile, prob = c(0.025)) %>% 
+  unlist()
+
+med = g3.df %>% 
+  select(starts_with("gamma.dye")) %>% 
+  summarise_all(quantile, prob = c(0.5)) %>% 
+  unlist()
+
+ub = g3.df %>% 
+  select(starts_with("gamma.dye")) %>% 
+  summarise_all(quantile, prob = c(0.975)) %>% 
+  unlist()
+
+quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
+  mutate(dye = 1:4)
+
+p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
+  geom_point(aes(col = "red"), show.legend = FALSE) + 
+  geom_errorbar(aes(ymin = lb, ymax = ub)) +
+  geom_hline(aes(yintercept=0)) +
+  ylab(bquote(gamma[dye])) + 
+  xlab("Dye")
+  
+p
+```
+
+
+Plot the dye effects by Average Peak Height - no fitted line here because with four points who cares:
+
+```{r}
+aph = gNano.df %>% 
+  group_by(dye) %>% 
+  summarise(aph = mean(log(obs), na.rm = TRUE)) %>% 
+  pull(aph)
+
+
+meanEffect = g3.df %>% 
+  select(starts_with("gamma.dye")) %>% 
+  summarise_all(mean, na.rm = TRUE) %>% 
+  unlist()
+  
+plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+p = plot.df %>% 
+  ggplot(aes(x = aph, y = meanEffect)) + 
+  geom_point(show.legend = FALSE) 
+p
+```
+
+Plot the observed vs the expected peak heights
+
+```{r}
+expected = g3.df %>% 
+  select(starts_with("pred")) %>% 
+  summarise_all(mean) %>% 
+  unlist()
+  
+plot.df = data.frame(observed = gNano.df$obs, expected = expected)
+p = plot.df %>% 
+  ggplot(aes(x = log10(observed), y = log10(expected))) +
+           geom_point() +
+           geom_abline(aes(intercept = 0, slope = 1)) + 
+          xlim(2, 5) +
+          ylim(2, 5)
+p
+```
+
+## Model $g_4$ - all other effects except extra variance
+```{r g3, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
+#knitr::include_graphics("g3.png")
+```
+
+Is the added variance being used?
+
+```{r}
+load("../systematic/g-4.Rda")
+g4.df = data.frame(as.matrix(sim.sample[[1]]))
+
+lb = g3.df %>% 
+    select(starts_with("gamma.dye")) %>% 
+    summarise_all(quantile, prob = c(0.025)) %>% 
+  unlist()
+
+med = g3.df %>% 
+  select(starts_with("gamma.dye")) %>% 
+  summarise_all(quantile, prob = c(0.5)) %>% 
+  unlist()
+
+ub = g3.df %>% 
+  select(starts_with("gamma.dye")) %>% 
+  summarise_all(quantile, prob = c(0.975)) %>% 
+  unlist()
+
+quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
+  mutate(dye = 1:4)
+
+p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
+  geom_point(aes(col = "red"), show.legend = FALSE) + 
+  geom_errorbar(aes(ymin = lb, ymax = ub)) +
+  geom_hline(aes(yintercept=0)) +
+  ylab(bquote(gamma[dye])) + 
+  xlab("Dye")
+  
 p
 ```
