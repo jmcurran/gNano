@@ -33,7 +33,8 @@ model
   tau1 ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
+      X[i]
     log.y[i] ~ dnorm(mu[i], tau[i])
     
     tau[i] = aph[profile[i]]/(aph[profile[i]]/tau0 + 1/tau1)

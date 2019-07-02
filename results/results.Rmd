@@ -15,16 +15,26 @@ knitr::include_graphics("g0.png")
 ```
 
 **Model:**
-$\mathrm{E}[y_{c,l,a}]) = \log(\mu)$
-$\mathrm{Var}[y_{c,l,a}] = \sigma^2$
+\[
+y_{c,l,a} \sim \Gamma(r,s)
+\]
+If
+\[
+\mathrm{E}[y_{c,l,a}]) = \log(\mu)\mbox{ and }\mathrm{Var}[y_{c,l,a}] = \sigma^2
+\]
+then we let
+\[
+r  = \frac{\mu^2}{\sigma^2}\mbox{ and }s = \frac{\mu}{\sigma^2}
+\]
+Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\log(\mu)$ is $N(0, 10^6)$.
 
+First I will load up the results.
 
-First I will load up the dat
 ```{r}
 load("../systematic/g-0.Rda")
 ```
 
-Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier.
+Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier. **Note this type conversion won't work unless rjags is loaded**
 
 ```{r}
 library(rjags)
@@ -42,7 +52,7 @@ p = g0.df %>%
 p
 ```
 
-We want plots of shape and rate, so I will create them in the data frame first
+We want plots of shape and rate, so I will create them in the data frame first as we didn't store them during the sampling
 ```{r}
 g0.df = g0.df %>% 
   mutate(shape = exp(log.Mu)^2 * tau) %>% 
@@ -343,7 +353,7 @@ p
 ```
 
 ## Model $g_4$ - all other effects except extra variance
-```{r g3, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
+```{r g4, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
 #knitr::include_graphics("g3.png")
 ```
 
@@ -436,18 +446,6 @@ plot.df = bind_rows(g3.quantiles, g4.quantiles) %>%
   select(obs, model, lb, med, ub) %>% 
   arrange(obs)
 
-
-
-
-plot.df = data.frame(obs = gNano.df$obs, 
-                     med.g3 = g3.quantiles$`50%`,
-                     med.g4 = g4.quantiles$`50%`,
-                     lb.g3 = g3.quantiles$`2.5%`,
-                     lb.g4 = g4.quantiles$`2.5%`,
-                     ub.g3 = g3.quantiles$`97.5%`,
-                     ub.g4 = g4.quantiles$`97.5%`)  %>% 
-  
-  arrange(obs)
 
 p = plot.df %>% 
   ggplot(aes(x = log10(obs), y = log10(med))) +
