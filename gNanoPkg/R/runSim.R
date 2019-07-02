@@ -62,7 +62,7 @@ runSim = function(form, data, simPath, simRoot,
   }
 
   if(effects$bVarEffect){
-    parameters = c(parameters, "tau0", "tau1")
+    parameters = c(parameters, "tau", "tau0")
   }else{
     parameters = c(parameters, "tau")
   }
