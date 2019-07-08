@@ -507,7 +507,7 @@ expected = ln0.df %>%
   
 plot.df = data.frame(observed = gNano.df$obs, expected = expected)
 p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
+  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(0, 5) +
@@ -588,7 +588,7 @@ expected = ln1.df %>%
   
 plot.df = data.frame(observed = gNano.df$obs, expected = expected)
 p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
+  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(0, 5) +
@@ -639,7 +639,7 @@ expected = ln2.df %>%
   
 plot.df = data.frame(observed = gNano.df$obs, expected = expected)
 p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
+  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(0, 5) +
@@ -737,7 +737,7 @@ expected = ln3.df %>%
   
 plot.df = data.frame(observed = gNano.df$obs, expected = expected)
 p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
+  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(0, 5) +
@@ -775,7 +775,7 @@ expected.ln4 = ln4.df %>%
   
 plot.df = data.frame(observed = gNano.df$obs, expected.ln4 = expected.ln4)
 p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected.ln4))) +
+  ggplot(aes(x = log10(observed), y = log10(exp(expected.ln4)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(0, 5) +
