@@ -11,6 +11,21 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 ```
 
+loads libraries
+```{r}
+library(here)
+library(rjags)
+library(ggplot2)
+library(tidyverse)
+library(gNanoPkg)
+```
+
+Initlaise data
+
+```{r}
+gNano.df = readData()
+```
+
 ## Model $g_0$ - no effects
 ```{r g0, echo=FALSE, fig.cap="Model $g_0$", out.width = '25%'}
 knitr::include_graphics("g0.png")
@@ -33,22 +48,18 @@ Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\lo
 First I will load up the results.
 
 ```{r}
-library(here)
 load("../systematic/g-0.Rda")
 ```
 
 Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier. **Note this type conversion won't work unless rjags is loaded**
 
 ```{r}
-library(rjags)
 g0.df = as.data.frame(as.matrix(sim.sample))
 ```
 
 
 I'll do this with ggplot2 so I can teach myself something 
 ```{r}
-library(ggplot2)
-library(tidyverse)
 p = g0.df %>% 
   ggplot(aes(x = tau)) +
   geom_density()
@@ -78,9 +89,6 @@ p
 
 
 ```{r}
-library(gNanoPkg)
-gNano.df = readData()
-
 rateDensity = density(g0.df$rate)
 shapeDensity = density(g0.df$shape)
 
@@ -491,7 +499,6 @@ p
 Comparing expected and observed peak heights
 
 ```{r}
-library(gNanoPkg)
 gNano.df = readData()
 expected = ln0.df %>% 
   select(starts_with("pred")) %>% 
@@ -668,7 +675,7 @@ p
 Dye effects
 
 ```{r}
-load("../systematic/g-3.Rda")
+load("../systematic/ln-3.Rda")
 ln3.df = data.frame(as.matrix(sim.sample[[1]]))
 
 lb = ln3.df %>% 
@@ -744,7 +751,7 @@ p
 Is the added variance being used?
 
 ```{r}
-load("../systematic/g-4.Rda")
+load("../systematic/ln-4.Rda")
 ln4.df = data.frame(as.matrix(sim.sample[[1]]))
 
 ln4.df = ln4.df %>% 
@@ -766,7 +773,7 @@ expected.ln4 = ln4.df %>%
   summarise_all(mean) %>% 
   unlist()
   
-plot.df = data.frame(observed = gNano.df$obs, expected.ln4 = expected.ln4, expected.ln3 = expected)
+plot.df = data.frame(observed = gNano.df$obs, expected.ln4 = expected.ln4)
 p = plot.df %>% 
   ggplot(aes(x = log10(observed), y = log10(expected.ln4))) +
            geom_point() +
