@@ -1,6 +1,6 @@
 library(gNanoPkg)
 
-debug(runSim)
+#debug(runSim)
 
 data.df = readData()
 simPath = here("systematic")
