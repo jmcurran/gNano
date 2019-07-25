@@ -43,9 +43,13 @@ runSim = function(form, data, simPath, simRoot,
   parameters = c("pred")
 
   if(responseDist == "gamma"){
-    parameters = c(parameters, "log.Mu")
+    parameters = c(parameters, "log.Mu", "shape", "rate")
   }else{
     parameters = c(parameters, "Mu")
+
+    if(any(unlist(effects))){ ## any other model than ln-0
+      parameters = c(parameters, "mu")
+    }
   }
 
   effects = bugsInput$effects
