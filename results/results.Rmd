@@ -377,6 +377,17 @@ g4.df = data.frame(as.matrix(sim.sample[[1]]))
 g4.df = g4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
 
+ys = g4.df[grep("pred", colnames(g4.df))]
+shapes = g4.df[grep("shape", colnames(g4.df))]
+rates = g4.df[grep("rate", colnames(g4.df))]
+
+g4.LL = (shapes-1)*log(ys)-rates+shapes*log(rates)-log(gamma(shapes))
+#just the finite sums
+g4.LLsums = as.vector(rowSums(g4.LL))[is.finite(as.vector(rowSums(g4.LL)))]
+#p = ggplot(data.frame(x = g4.LLsums), aes(x = x)) + geom_density()
+#p
+
+
 p = g4.df %>% 
   ggplot(aes(x = sigma.sq0)) +
   geom_density() + 
