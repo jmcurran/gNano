@@ -41,6 +41,7 @@ runSim = function(form, data, simPath, simRoot,
   responseDist = match.arg(responseDist)
 
   parameters = c("pred")
+  effects = bugsInput$effects
 
   if(responseDist == "gamma"){
     parameters = c(parameters, "log.Mu", "shape", "rate")
@@ -52,7 +53,7 @@ runSim = function(form, data, simPath, simRoot,
     }
   }
 
-  effects = bugsInput$effects
+  
   if(effects$bLocusEffect){
     parameters = c(parameters, "alpha.mu", "alpha.sigma", "alpha.locus")
   }
