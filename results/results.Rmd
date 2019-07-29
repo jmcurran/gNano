@@ -377,17 +377,6 @@ g4.df = data.frame(as.matrix(sim.sample[[1]]))
 g4.df = g4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
 
-ys = g4.df[grep("pred", colnames(g4.df))]
-shapes = g4.df[grep("shape", colnames(g4.df))]
-rates = g4.df[grep("rate", colnames(g4.df))]
-
-g4.LL = (shapes-1)*log(ys)-rates+shapes*log(rates)-log(gamma(shapes))
-#just the finite sums
-g4.LLsums = as.vector(rowSums(g4.LL))[is.finite(as.vector(rowSums(g4.LL)))]
-#p = ggplot(data.frame(x = g4.LLsums), aes(x = x)) + geom_density()
-#p
-
-
 p = g4.df %>% 
   ggplot(aes(x = sigma.sq0)) +
   geom_density() + 
@@ -794,3 +783,46 @@ p = plot.df %>%
 p
 ```
 
+compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
+
+```{r}
+#loads the gamma model 4
+load("../systematic/g-4.Rda")
+g4.df = data.frame(as.matrix(sim.sample[[1]]))
+
+g4.df = g4.df %>% 
+  mutate(sigma.sq0 = 1 / tau0)
+#pull out variables of interest
+ys = g4.df[grep("pred", colnames(g4.df))]
+shapes = g4.df[grep("shape", colnames(g4.df))]
+rates = g4.df[grep("rate", colnames(g4.df))]
+#calculate log(liks)
+g4.LL = (shapes-1)*log(ys)-rates+shapes*log(rates)-log(gamma(shapes))
+#sum across peaks (just the finite values)
+g4.LLsums = as.vector(rowSums(g4.LL))[is.finite(as.vector(rowSums(g4.LL)))]
+
+
+#loads the log-normal model 4
+load("../systematic/ln-4.Rda")
+ln4.df = data.frame(as.matrix(sim.sample[[1]]))
+
+ln4.df = ln4.df %>% 
+  mutate(sigma.sq0 = 1 / tau0)
+
+lnYs = ln4.df[grep("pred", colnames(ln4.df))]
+mus = ln4.df[grep("mu.", colnames(ln4.df))]
+taus = ln4.df[grep("tau.", colnames(ln4.df))]
+taus = taus[-4070] #gets rid of the last entry "tau0" which still seems to come through using grep on "tau."
+sigmas_sq = 1/(taus*taus)
+#calculate log(liks)
+ln4.LL = -0.5*((lnYs-mus)/sigmas_sq+0.5 * log(2*pi*sigmas_sq))
+#sum across peaks (just the finite values)
+ln4.LLsums = as.vector(rowSums(ln4.LL))[is.finite(as.vector(rowSums(ln4.LL)))]
+
+#plots densities
+p = ggplot(data.frame(x = g4.LLsums), aes(x = x))
+p = p + ggplot(data.frame(x = ln4.LLsums), aes(x = x))
+p = p + geom_density()
+p
+
+```
