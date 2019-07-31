@@ -786,43 +786,102 @@ p
 compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
 
 ```{r}
+# You need the latest version of tidyr to make this work. 
+# The commands to do this are on the next line
+# devtools::install_github("tidyverse/tidyr")
+library(tidyr)
+
 #loads the gamma model 4
 load("../systematic/g-4.Rda")
 g4.df = data.frame(as.matrix(sim.sample[[1]]))
 
-g4.df = g4.df %>% 
-  mutate(sigma.sq0 = 1 / tau0)
-#pull out variables of interest
-ys = g4.df[grep("pred", colnames(g4.df))]
-shapes = g4.df[grep("shape", colnames(g4.df))]
-rates = g4.df[grep("rate", colnames(g4.df))]
-#calculate log(liks)
-g4.LL = (shapes-1)*log(ys)-rates+shapes*log(rates)-log(gamma(shapes))
-#sum across peaks (just the finite values)
-g4.LLsums = as.vector(rowSums(g4.LL))[is.finite(as.vector(rowSums(g4.LL)))]
+sr.df = g4.df %>% 
+  select(c(starts_with("shape"), starts_with("rate"))) 
 
+sr.df = sr.df %>% 
+  pivot_longer(cols = everything(), names_to = "parameter")
+  
+nObs = length(gNano.df$obs)
+
+sr.df = sr.df %>% 
+  mutate(obs = as.numeric(gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\2", parameter)))
+
+sr.df = sr.df %>% 
+  mutate(parameter = gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\1", parameter))
+
+shape.df = sr.df %>% 
+  filter(parameter == "shape")
+
+rate.df = sr.df %>% 
+  filter(parameter == "rate")
+
+sr.df = data.frame(
+  obs = shape.df$obs,
+  y = rep(gNano.df$obs, 1000),
+  shape = shape.df$value,
+  rate = rate.df$value
+)
+
+sr.df = sr.df %>% 
+  mutate(rep = rep(1:1000, rep(nObs, 1000)))
+
+g4.ll = sr.df %>% 
+  group_by(rep) %>% 
+  summarise(ll = sum(dgamma(y, shape, rate, log = TRUE)))
+
+p = g4.ll %>% 
+  ggplot(aes(x = ll)) + geom_histogram()
+p
 
 #loads the log-normal model 4
 load("../systematic/ln-4.Rda")
 ln4.df = data.frame(as.matrix(sim.sample[[1]]))
 
-ln4.df = ln4.df %>% 
-  mutate(sigma.sq0 = 1 / tau0)
+ms.df = ln4.df %>% 
+  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau[.][0-9]+[.]$"))) 
 
-lnYs = ln4.df[grep("pred", colnames(ln4.df))]
-mus = ln4.df[grep("mu.", colnames(ln4.df))]
-taus = ln4.df[grep("tau.", colnames(ln4.df))]
-taus = taus[-4070] #gets rid of the last entry "tau0" which still seems to come through using grep on "tau."
-sigmas_sq = 1/(taus*taus)
-#calculate log(liks)
-ln4.LL = -0.5*((lnYs-mus)/sigmas_sq+0.5 * log(2*pi*sigmas_sq))
-#sum across peaks (just the finite values)
-ln4.LLsums = as.vector(rowSums(ln4.LL))[is.finite(as.vector(rowSums(ln4.LL)))]
+ms.df = ms.df %>% 
+  pivot_longer(cols = everything(), names_to = "parameter")
+  
+nObs = length(gNano.df$obs)
+
+ms.df = ms.df %>% 
+  mutate(obs = as.numeric(gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\2", parameter)))
+
+ms.df = ms.df %>% 
+  mutate(parameter = gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\1", parameter))
+
+mu.df = ms.df %>% 
+  filter(parameter == "mu")
+
+sigma.df = ms.df %>% 
+  filter(parameter == "tau") %>% 
+  mutate(sigma = 1 / sqrt(value)) %>% 
+  select(-value)
+
+ms.df = data.frame(
+  obs = mu.df$obs,
+  y = rep(gNano.df$obs, 1000),
+  mu = mu.df$value,
+  sigma = sigma.df$sigma
+)
+
+ms.df = ms.df %>% 
+  mutate(rep = rep(1:1000, rep(nObs, 1000)))
+
+ln4.ll = ms.df %>% 
+  group_by(rep) %>% 
+  summarise(ll = sum(dlnorm(y, mu, sigma, log = TRUE)))
+
+plot.df = left_join(g4.ll, ln4.ll, by = c("rep" = "rep")) %>% 
+  rename(g4 = ll.x, ln4 = ll.y) 
+# %>% 
+#   pivot_longer(cols = c(g4, ln4), names_to = "model")
 
 #plots densities
-p = ggplot(data.frame(x = g4.LLsums), aes(x = x))
-p = p + ggplot(data.frame(x = ln4.LLsums), aes(x = x))
-p = p + geom_density()
+p = ggplot(plot.df) 
+p = p + geom_density(aes(x = g4, col = "red"))
+p = p + geom_density(aes(x = ln4, col = "green"))
 p
 
 ```
