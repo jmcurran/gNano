@@ -48,7 +48,7 @@ Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\lo
 First I will load up the results.
 
 ```{r}
-load("../systematic/g-0.Rda")
+load("../gNanoPkg/systematic/g-0.Rda")
 ```
 
 Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier. **Note this type conversion won't work unless rjags is loaded**
@@ -118,8 +118,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(expected))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -131,7 +134,7 @@ knitr::include_graphics("g1.png")
 
 Let's have a look at the profile effects. I like to use error bar plots 
 ```{r}
-load("../systematic/g-1.Rda")
+load("../gNanoPkg/systematic/g-1.Rda")
 g1.df = as.data.frame(as.matrix(sim.sample))
 ```
 
@@ -160,8 +163,9 @@ p = ggplot(data = quantiles.df, aes(x = profile, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(beta[Profile])) + 
-  xlab("Profile")
+  ylab(bquote(tau[c])) + 
+  xlab("Profile") + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
   
 p
 ```
@@ -178,11 +182,14 @@ meanEffect = g1.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
-  geom_smooth()
+  geom_smooth() + 
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~tau[c])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 
 p
 ```
@@ -201,8 +208,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(expected))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -212,7 +222,7 @@ knitr::include_graphics("g2.png")
 ```
 
 ```{r}
-load("../systematic/g-2.Rda")
+load("../gNanoPkg/systematic/g-2.Rda")
 g2.df = data.frame(as.matrix(sim.sample[[1]]))
 
 lb = g2.df %>% 
@@ -237,9 +247,9 @@ p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(alpha[locus])) + 
-  xlab("Locus")
-  
+  ylab(bquote(alpha[l])) + 
+  xlab("Locus") + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -256,8 +266,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(expected))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -279,8 +292,10 @@ plot.df = data.frame(aph = aph, meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
-  geom_smooth()
-
+  geom_smooth() + 
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~alpha[l])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -292,7 +307,7 @@ knitr::include_graphics("g3.png")
 Dye effects
 
 ```{r}
-load("../systematic/g-3.Rda")
+load("../gNanoPkg/systematic/g-3.Rda")
 g3.df = data.frame(as.matrix(sim.sample[[1]]))
 
 lb = g3.df %>% 
@@ -317,9 +332,9 @@ p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(gamma[dye])) + 
-  xlab("Dye")
-  
+  ylab(bquote(gamma[f])) + 
+  xlab("Dye") +
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -338,10 +353,14 @@ meanEffect = g3.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
-  geom_point(show.legend = FALSE) 
+  geom_point(show.legend = FALSE) +
+  geom_smooth() + 
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~delta[f])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -358,8 +377,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(expected))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -371,17 +393,19 @@ p
 Is the added variance being used?
 
 ```{r}
-load("../systematic/g-4.Rda")
+load("../gNanoPkg/systematic/g-4.Rda")
 g4.df = data.frame(as.matrix(sim.sample[[1]]))
 
 g4.df = g4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
 
 p = g4.df %>% 
-  ggplot(aes(x = sigma.sq0)) +
-  geom_density() + 
-  xlab(bquote(sigma[0]^2))
-
+  ggplot(aes(x = sigma.sq0/10^5)) +
+  geom_density() +
+  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^5, probs=0.025)) +
+  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^5, probs=0.975)) +
+  xlab(bquote(sigma[0]^2~(x10^5))) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -398,8 +422,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(expected.g4))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -410,8 +437,8 @@ p = plot.df %>%
   ggplot(aes(x = log10(expected.g3), y = log10(expected.g4))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(2, 5) +
-          ylim(2, 5)
+          xlim(1, 5) +
+          ylim(1, 5)
 p
 ```
 
@@ -420,7 +447,7 @@ I think it's doing what it is supposed to.
 Let's try and look at the expected values slightly differently. I will work with the summary stats rather than the raw data
 
 ```{r}
-load("../systematic/g-3.Rda")
+load("../gNanoPkg/systematic/g-3.Rda")
 
 g3.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
   select(starts_with("pred"))  %>%
@@ -440,7 +467,7 @@ g3.stats = as.data.frame(t(simSummary$statistics)) %>%
 
 
 
-load("../systematic/g-4.Rda")
+load("../gNanoPkg/systematic/g-4.Rda")
 
 g4.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
     select(starts_with("pred"))  %>%
@@ -462,8 +489,8 @@ p = plot.df %>%
   ggplot(aes(x = log10(obs), y = log10(med))) +
   facet_grid(vars(model)) +
     geom_abline(aes(intercept = 0, slope = 1)) +
-    xlim(2, 5) +
-    ylim(2, 5) +
+    xlim(1, 5) +
+    ylim(1, 5) +
   geom_point(show.legend = FALSE) + 
   geom_smooth() +
   geom_line(aes(y = log10(lb)), col = "green") + geom_line(aes(y = log10(ub)), col = "red")
@@ -478,7 +505,7 @@ Now we move on the the log normal models
 Tau
 
 ```{r}
-load("../systematic/ln-0.Rda")
+load("../gNanoPkg/systematic/ln-0.Rda")
 ln0.df = data.frame(as.matrix(sim.sample[[1]]))
 
 p = ln0.df %>% 
@@ -510,8 +537,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(0, 5) +
-          ylim(0, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -520,7 +550,7 @@ p
 Load the data
 
 ```{r}
-load("../systematic/ln-1.Rda")
+load("../gNanoPkg/systematic/ln-1.Rda")
 ln1.df = as.data.frame(as.matrix(sim.sample))
 ```
 
@@ -549,8 +579,9 @@ p = ggplot(data = quantiles.df, aes(x = profile, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(beta[Profile])) + 
-  xlab("Profile")
+  ylab(bquote(tau[c])) + 
+  xlab("Profile") + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
   
 p
 ```
@@ -569,12 +600,14 @@ meanEffect = ln1.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
-  geom_smooth()
-
+  geom_smooth() +
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~tau[c])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -591,15 +624,18 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(0, 5) +
-          ylim(0, 5)
+          xlim(1, 5) +
+          ylim(1, 5) + 
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
 ## Model $ln_2$ - locus effects
 
 ```{r}
-load("../systematic/ln-2.Rda")
+load("../gNanoPkg/systematic/ln-2.Rda")
 ln2.df = data.frame(as.matrix(sim.sample[[1]]))
 
 lb = ln2.df %>% 
@@ -624,9 +660,9 @@ p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(alpha[locus])) + 
-  xlab("Locus")
-  
+  ylab(bquote(alpha[l])) + 
+  xlab("Locus") + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -642,8 +678,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(0, 5) +
-          ylim(0, 5)
+          xlim(1, 5) +
+          ylim(1, 5) +
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -665,8 +704,10 @@ plot.df = data.frame(aph = aph, meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
-  geom_smooth()
-
+  geom_smooth() +
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~alpha[l])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -675,7 +716,7 @@ p
 Dye effects
 
 ```{r}
-load("../systematic/ln-3.Rda")
+load("../gNanoPkg/systematic/ln-3.Rda")
 ln3.df = data.frame(as.matrix(sim.sample[[1]]))
 
 lb = ln3.df %>% 
@@ -700,9 +741,9 @@ p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(gamma[dye])) + 
-  xlab("Dye")
-  
+  ylab(bquote(gamma[f])) + 
+  xlab("Dye") +
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -720,10 +761,14 @@ meanEffect = ln3.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
-  geom_point(show.legend = FALSE) 
+  geom_point(show.legend = FALSE) +
+  geom_smooth() +
+  xlab(expression(log[10]~(aph))) + 
+  ylab(bquote(mean~delta[f])) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -740,8 +785,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(0, 5) +
-          ylim(0, 5)
+          xlim(1, 5) +
+          ylim(1, 5) +
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -751,7 +799,7 @@ p
 Is the added variance being used?
 
 ```{r}
-load("../systematic/ln-4.Rda")
+load("../gNanoPkg/systematic/ln-4.Rda")
 ln4.df = data.frame(as.matrix(sim.sample[[1]]))
 
 ln4.df = ln4.df %>% 
@@ -759,9 +807,11 @@ ln4.df = ln4.df %>%
 
 p = ln4.df %>% 
   ggplot(aes(x = sigma.sq0)) +
-  geom_density() + 
-  xlab(bquote(sigma[0]^2))
-
+  geom_density() +
+  geom_vline(xintercept = quantile(ln4.df$sigma.sq0, probs=0.025)) +
+  geom_vline(xintercept = quantile(ln4.df$sigma.sq0, probs=0.975)) +
+  xlab(bquote(sigma[0]^2)) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -778,8 +828,11 @@ p = plot.df %>%
   ggplot(aes(x = log10(observed), y = log10(exp(expected.ln4)))) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(0, 5) +
-          ylim(0, 5)
+          xlim(1, 5) +
+          ylim(1, 5) +
+          xlab(expression(log[10]~(observed~height))) + 
+          ylab(expression(log[10]~(expected~height))) + 
+          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
@@ -792,7 +845,8 @@ compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
 library(tidyr)
 
 #loads the gamma model 4
-load("../systematic/g-4.Rda")
+load("../gNanoPkg/systematic/g-4.Rda")
+#load(paste(here(),"/systematic/g-4.Rda",sep=""))
 g4.df = data.frame(as.matrix(sim.sample[[1]]))
 
 sr.df = g4.df %>% 
@@ -834,7 +888,8 @@ p = g4.ll %>%
 p
 
 #loads the log-normal model 4
-load("../systematic/ln-4.Rda")
+load("../gNanoPkg/systematic/ln-4.Rda")
+#load(paste(here(),"/systematic/ln-4.Rda",sep=""))
 ln4.df = data.frame(as.matrix(sim.sample[[1]]))
 
 ms.df = ln4.df %>% 
@@ -880,8 +935,12 @@ plot.df = left_join(g4.ll, ln4.ll, by = c("rep" = "rep")) %>%
 
 #plots densities
 p = ggplot(plot.df) 
-p = p + geom_density(aes(x = g4, col = "red"))
-p = p + geom_density(aes(x = ln4, col = "green"))
+p = p + geom_density(aes(x = g4, col = "gamma"))
+p = p + geom_density(aes(x = ln4, col = "log-normal"))
+p = p + xlab(expression(log[10]~(likelihood)))
+p = p + ylab("density")
+p = p + theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
+p = p + guides(fill=guide_legend(title = "distribution"))
 p
 
 ```
