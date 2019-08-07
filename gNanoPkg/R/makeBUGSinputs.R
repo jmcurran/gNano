@@ -114,14 +114,13 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         paste0("
           log.Mu ~ dnorm(0, 0.000001)
           tau0 ~ dgamma(0.001, 0.001)
-          tau1 ~ dgamma(0.001, 0.001)
-
+ 
           for(i in 1:N){",
                meanModel,
                "
             mu[i] = exp(log.mu[i])
 
-            tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+            tau[i] = aph[profile[i]] * tau0
             rate[i] = mu[i] * tau[i]
             shape[i] = mu[i] *rate[i]
 
@@ -149,12 +148,11 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         {
             Mu ~ dnorm(0, 0.00001)
             tau0 ~ dgamma(0.001, 0.001)
-            tau1 ~ dgamma(0.001, 0.001)
 
             for(i in 1:N){
               log.y[i] ~ dnorm(Mu, tau[i])
 
-              tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+              tau[i] = aph[profile[i]] * tau0
 
               pred[i] ~ dnorm(Mu, tau[i])
             }
