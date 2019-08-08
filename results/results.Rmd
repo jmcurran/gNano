@@ -288,7 +288,7 @@ meanEffect = g2.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
@@ -332,7 +332,7 @@ p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(gamma[f])) + 
+  ylab(bquote(delta[f])) + 
   xlab("Dye") +
   theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
@@ -400,11 +400,11 @@ g4.df = g4.df %>%
   mutate(sigma.sq0 = 1 / tau0)
 
 p = g4.df %>% 
-  ggplot(aes(x = sigma.sq0/10^5)) +
+  ggplot(aes(x = sigma.sq0/10^6)) +
   geom_density() +
-  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^5, probs=0.025)) +
-  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^5, probs=0.975)) +
-  xlab(bquote(sigma[0]^2~(x10^5))) + 
+  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^6, probs=0.025)) +
+  geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^6, probs=0.975)) +
+  xlab(bquote(sigma[0]^2~(x10^6))) + 
   theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
@@ -700,7 +700,7 @@ meanEffect = ln2.df %>%
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
   
-plot.df = data.frame(aph = aph, meanEffect = meanEffect)
+plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
@@ -741,7 +741,7 @@ p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
   geom_point(aes(col = "red"), show.legend = FALSE) + 
   geom_errorbar(aes(ymin = lb, ymax = ub)) +
   geom_hline(aes(yintercept=0)) +
-  ylab(bquote(gamma[f])) + 
+  ylab(bquote(delta[f])) + 
   xlab("Dye") +
   theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
