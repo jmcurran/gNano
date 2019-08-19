@@ -20,10 +20,37 @@ library(tidyverse)
 library(gNanoPkg)
 ```
 
-Initlaise data
+Initialise data
 
 ```{r}
 gNano.df = readData()
+```
+
+Specify where the results are stored relative to the gNano project and this file.
+
+```{r}
+jamesDuncan = TRUE
+
+resultsRoot = if(jamesDuncan){
+    "../systematic/"
+  }else{
+    "../gNanoPkg/systematic/"
+  }
+
+loadResults = function(model = c(paste0("g-",0:4), paste0("ln-",0:4)),
+                       summary = FALSE){
+
+  model = match.arg(model)
+  
+  resultsFile = glue("{resultsRoot}{model}.Rda")
+  results = load(resultsFile)
+  
+  if(summary){
+    return(simSummary)
+  }
+  
+  return(as.data.frame(sim.sample[[1]]))
+}
 ```
 
 ## Model $g_0$ - no effects
@@ -48,13 +75,7 @@ Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\lo
 First I will load up the results.
 
 ```{r}
-load("../gNanoPkg/systematic/g-0.Rda")
-```
-
-Given that we only have one chain, we might as well simultaneously pull the results out of the list, and turn the results into a data frame. This will make our code easier. **Note this type conversion won't work unless rjags is loaded**
-
-```{r}
-g0.df = as.data.frame(as.matrix(sim.sample))
+g0.df = loadResults("g-0")
 ```
 
 
@@ -134,8 +155,7 @@ knitr::include_graphics("g1.png")
 
 Let's have a look at the profile effects. I like to use error bar plots 
 ```{r}
-load("../gNanoPkg/systematic/g-1.Rda")
-g1.df = as.data.frame(as.matrix(sim.sample))
+g1.df = loadResults("g-1")
 ```
 
 
@@ -222,8 +242,7 @@ knitr::include_graphics("g2.png")
 ```
 
 ```{r}
-load("../gNanoPkg/systematic/g-2.Rda")
-g2.df = data.frame(as.matrix(sim.sample[[1]]))
+g2.df = loadResults("g-2")
 
 lb = g2.df %>% 
     select(starts_with("alpha.locus")) %>% 
@@ -307,8 +326,7 @@ knitr::include_graphics("g3.png")
 Dye effects
 
 ```{r}
-load("../gNanoPkg/systematic/g-3.Rda")
-g3.df = data.frame(as.matrix(sim.sample[[1]]))
+g3.df = loadResults("g-3")
 
 lb = g3.df %>% 
     select(starts_with("gamma.dye")) %>% 
@@ -393,8 +411,7 @@ p
 Is the added variance being used?
 
 ```{r}
-load("../gNanoPkg/systematic/g-4.Rda")
-g4.df = data.frame(as.matrix(sim.sample[[1]]))
+g4.df = loadResults("g-4")
 
 g4.df = g4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
@@ -447,7 +464,7 @@ I think it's doing what it is supposed to.
 Let's try and look at the expected values slightly differently. I will work with the summary stats rather than the raw data
 
 ```{r}
-load("../gNanoPkg/systematic/g-3.Rda")
+simSummary = loadResults("g-3", summary = TRUE)
 
 g3.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
   select(starts_with("pred"))  %>%
@@ -467,7 +484,7 @@ g3.stats = as.data.frame(t(simSummary$statistics)) %>%
 
 
 
-load("../gNanoPkg/systematic/g-4.Rda")
+simSummary = loadResults("g-4", summary = TRUE)
 
 g4.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
     select(starts_with("pred"))  %>%
@@ -505,8 +522,7 @@ Now we move on the the log normal models
 Tau
 
 ```{r}
-load("../gNanoPkg/systematic/ln-0.Rda")
-ln0.df = data.frame(as.matrix(sim.sample[[1]]))
+ln0.df = loadResults("ln-0")
 
 p = ln0.df %>% 
   ggplot(aes(x = tau)) +
@@ -550,8 +566,7 @@ p
 Load the data
 
 ```{r}
-load("../gNanoPkg/systematic/ln-1.Rda")
-ln1.df = as.data.frame(as.matrix(sim.sample))
+ln1.df = loadResults("ln-1")
 ```
 
 Showing the per profile effects
@@ -635,8 +650,7 @@ p
 ## Model $ln_2$ - locus effects
 
 ```{r}
-load("../gNanoPkg/systematic/ln-2.Rda")
-ln2.df = data.frame(as.matrix(sim.sample[[1]]))
+ln2.df = loadResults("ln-2")
 
 lb = ln2.df %>% 
     select(starts_with("alpha.locus")) %>% 
@@ -716,8 +730,8 @@ p
 Dye effects
 
 ```{r}
-load("../gNanoPkg/systematic/ln-3.Rda")
-ln3.df = data.frame(as.matrix(sim.sample[[1]]))
+ln3.df = loadResults("ln-3")
+
 
 lb = ln3.df %>% 
     select(starts_with("gamma.dye")) %>% 
@@ -799,8 +813,7 @@ p
 Is the added variance being used?
 
 ```{r}
-load("../gNanoPkg/systematic/ln-4.Rda")
-ln4.df = data.frame(as.matrix(sim.sample[[1]]))
+ln4.df = loadResults("ln-4")
 
 ln4.df = ln4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
@@ -845,9 +858,7 @@ compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
 library(tidyr)
 
 #loads the gamma model 4
-load("../gNanoPkg/systematic/g-4.Rda")
-#load(paste(here(),"/systematic/g-4.Rda",sep=""))
-g4.df = data.frame(as.matrix(sim.sample[[1]]))
+g4.df = loadResults("g-4")
 
 sr.df = g4.df %>% 
   select(c(starts_with("shape"), starts_with("rate"))) 
@@ -858,10 +869,10 @@ sr.df = sr.df %>%
 nObs = length(gNano.df$obs)
 
 sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\2", parameter)))
+  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
 
 sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\1", parameter))
+  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
 
 shape.df = sr.df %>% 
   filter(parameter == "shape")
@@ -888,12 +899,10 @@ p = g4.ll %>%
 p
 
 #loads the log-normal model 4
-load("../gNanoPkg/systematic/ln-4.Rda")
-#load(paste(here(),"/systematic/ln-4.Rda",sep=""))
-ln4.df = data.frame(as.matrix(sim.sample[[1]]))
+ln4.df = loadResults("ln-4")
 
 ms.df = ln4.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau[.][0-9]+[.]$"))) 
+  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau([.]|\\[)[0-9]+([.]|\\])$"))) 
 
 ms.df = ms.df %>% 
   pivot_longer(cols = everything(), names_to = "parameter")
@@ -901,10 +910,10 @@ ms.df = ms.df %>%
 nObs = length(gNano.df$obs)
 
 ms.df = ms.df %>% 
-  mutate(obs = as.numeric(gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\2", parameter)))
+  mutate(obs = as.numeric(gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
 
 ms.df = ms.df %>% 
-  mutate(parameter = gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\1", parameter))
+  mutate(parameter = gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
 
 mu.df = ms.df %>% 
   filter(parameter == "mu")
@@ -955,9 +964,7 @@ comparing the g3 model and the g4 model
 library(tidyr)
 
 #loads the gamma model 4
-load("../gNanoPkg/systematic/g-4.Rda")
-#load(paste(here(),"/systematic/g-4.Rda",sep=""))
-g4.df = data.frame(as.matrix(sim.sample[[1]]))
+g4.df = loadResults("g-4")
 
 sr.df = g4.df %>% 
   select(c(starts_with("shape"), starts_with("rate"))) 
@@ -968,10 +975,10 @@ sr.df = sr.df %>%
 nObs = length(gNano.df$obs)
 
 sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\2", parameter)))
+  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
 
 sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\1", parameter))
+  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
 
 shape.df = sr.df %>% 
   filter(parameter == "shape")
@@ -999,9 +1006,8 @@ p
 
 
 
-#loads the log-normal model 4
-load("../gNanoPkg/systematic/g-3.Rda")
-g3.df = data.frame(as.matrix(sim.sample[[1]]))
+g3.df = loadResults("g-3")
+
 
 sr.df = g3.df %>% 
   select(c(starts_with("shape"), starts_with("rate"))) 
@@ -1012,10 +1018,10 @@ sr.df = sr.df %>%
 nObs = length(gNano.df$obs)
 
 sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\2", parameter)))
+  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\2", parameter)))
 
 sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)[.]([0-9]+)[.]$", "\\1", parameter))
+  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
 
 shape.df = sr.df %>% 
   filter(parameter == "shape")
@@ -1061,7 +1067,7 @@ p
 
 ```
 
-compare the kn3 and ln4 models
+compare the ln3 and ln4 models
 
 ```{r}
 # You need the latest version of tidyr to make this work. 
@@ -1070,36 +1076,32 @@ compare the kn3 and ln4 models
 library(tidyr)
 
 #loads the log-normal model 3
-load("../gNanoPkg/systematic/ln-3.Rda")
-ln3.df = data.frame(as.matrix(sim.sample[[1]]))
+ln3.df = loadResults("ln-3")
 
 ms.df = ln3.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau[.][0-9]+[.]$"))) 
+  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau$"))) 
 
 ms.df = ms.df %>% 
   pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-ms.df = ms.df %>% 
-  mutate(obs = as.numeric(gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\2", parameter)))
-
-ms.df = ms.df %>% 
-  mutate(parameter = gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\1", parameter))
-
-mu.df = ms.df %>% 
-  filter(parameter == "mu")
 
 sigma.df = ms.df %>% 
   filter(parameter == "tau") %>% 
   mutate(sigma = 1 / sqrt(value)) %>% 
   select(-value)
 
+nObs = length(gNano.df$obs)
+
+mu.df = ms.df %>% 
+  filter(grepl("^mu", parameter)) %>% 
+  mutate(obs = as.numeric(gsub("^mu([.]|\\[)([0-9]+)([.]|\\])$", "\\2", parameter))) %>% 
+  select(-parameter)
+
+
 ms.df = data.frame(
   obs = mu.df$obs,
   y = rep(gNano.df$obs, 1000),
   mu = mu.df$value,
-  sigma = sigma.df$sigma
+  sigma = rep(sigma.df$sigma, rep(nObs, 1000))
 )
 
 ms.df = ms.df %>% 
@@ -1113,13 +1115,10 @@ ln3.ll = ms.df %>%
 
 
 
-#loads the log-normal model 4
-load("../gNanoPkg/systematic/ln-4.Rda")
-#load(paste(here(),"/systematic/ln-4.Rda",sep=""))
-ln4.df = data.frame(as.matrix(sim.sample[[1]]))
+ln4.df = loadResults("ln-4")
 
 ms.df = ln4.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau[.][0-9]+[.]$"))) 
+  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau([.]|\\[)[0-9]+([.]|\\])$"))) 
 
 ms.df = ms.df %>% 
   pivot_longer(cols = everything(), names_to = "parameter")
@@ -1127,10 +1126,10 @@ ms.df = ms.df %>%
 nObs = length(gNano.df$obs)
 
 ms.df = ms.df %>% 
-  mutate(obs = as.numeric(gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\2", parameter)))
+  mutate(obs = as.numeric(gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
 
 ms.df = ms.df %>% 
-  mutate(parameter = gsub("^(mu|tau)[.]([0-9]+)[.]$", "\\1", parameter))
+  mutate(parameter = gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
 
 mu.df = ms.df %>% 
   filter(parameter == "mu")
@@ -1167,7 +1166,7 @@ p = p + xlab(expression(log[10]~(likelihood)))
 p = p + ylab("density")
 p = p + theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"), legend.position = "right", legend.justification = "top-right")
 p = p + scale_colour_manual(name="distribution", breaks =c("ln4", "ln3"), values = c("blue", "red"))
-p = p + scale_x_continuous(limits=c(-35600, -34600))
+# p = p + scale_x_continuous(limits=c(-35600, -34600))
 p
 
 ```
