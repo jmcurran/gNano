@@ -56,13 +56,12 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
           log.Mu ~ dnorm(0, 0.000001)
           Mu = exp(log.Mu)
           tau0 ~ dgamma(0.001, 0.001)
-          tau1 ~ dgamma(0.001, 0.001)
 
           for(i in 1:N){
             y[i] ~ dgamma(shape[i], rate[i])
             pred[i] ~ dgamma(shape[i], rate[i])
 
-            tau[i] = aph[profile[i]] / (aph[profile[i]] / tau0 + 1 / tau1)
+            tau[i] = aph[profile[i]] * tau0
 
             rate[i] = Mu * tau[i]
             shape[i] = Mu * rate[i]
@@ -114,7 +113,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         paste0("
           log.Mu ~ dnorm(0, 0.000001)
           tau0 ~ dgamma(0.001, 0.001)
- 
+
           for(i in 1:N){",
                meanModel,
                "
@@ -131,7 +130,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 
       modelString = paste0(modelString, main, "\n}")
     }
-  }else{
+  }else if(responseDist == "normal"){
     if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
       if(!bVarEffect){
         modelString = "model
@@ -212,7 +211,130 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
         }
       modelString = paste0(modelString, main, "\n}")
     }
+  }else{ ## skew-normal
+    if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
+      if(!bVarEffect){
+        modelString = "model
+    {
+          for(i in 1:N){
+            dsn[i] <- ((2 / scale)
+                  * dnorm((log.y[i] - location) / scale, 0, 1)
+                  * pnorm(skew * (log.y[i] - location) / scale, 0, 1 ))
+            spy[i] <- dsn[i] / C
+            ones[i] ~ dbern(spy[i])
+
+            u1[i] ~ dnorm(0, 1)
+            u2[i] ~ dnorm(0, 1)
+
+            z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
+            pred[i] = scale * z[i] + location
+        }
+
+        scale ~ dgamma(1.105,0.105)
+        location ~ dnorm(0, 0.001)
+        skew ~ dnorm(0, 0.001)
+    }
+      "
+      }else{
+        modelString = "model
+      {
+          for(i in 1:N){
+            dsn[i] <- ((2 / scale[i])
+                  * dnorm((log.y[i] - location) / scale[i], 0, 1)
+                  * pnorm(skew * (log.y[i] - location) / scale[i], 0, 1 ))
+            spy[i] <- dsn[i] / C
+            ones[i] ~ dbern(spy[i])
+            scale[i] <- scale0 / aph[profile[i]]
+
+           u1[i] ~ dnorm(0, 1)
+            u2[i] ~ dnorm(0, 1)
+
+            z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
+            pred[i] = scale[i] * z[i] + location
+
+        }
+
+        scale0 ~ dgamma(1.105,0.105)
+        location ~ dnorm(0, 0.001)
+        skew ~ dnorm(0, 0.001)
+      }"
+      }
+    }else{
+      modelString = "model
+      {
+    "
+
+      meanModel = "location[i] = Mu"
+
+      if(bLocusEffect){
+        modelString = paste0(modelString, locusEffects)
+        meanModel = paste0(meanModel, "+ alpha.locus[locus[i]]")
+      }
+
+      if(bProfileEffect){
+        modelString = paste0(modelString, profileEffects)
+        meanModel = paste0(meanModel, "+ beta.profile[profile[i]]")
+      }
+
+      if(bDyeEffect){
+        modelString = paste0(modelString, dyeEffects)
+        meanModel = paste0(meanModel, "+ gamma.dye[dye[i]]")
+      }
+
+      if(bDoseEffect){
+        meanModel = paste0(meanModel, "+ X[i]")
+      }
+
+      main = if(!bVarEffect){
+        paste0("
+                    Mu ~ dnorm(0, 0.000001)
+                    scale ~ dgamma(1.105, 0.105)
+                    skew ~ dnorm(0, 0.001)
+
+                    for(i in 1:N){",
+               meanModel,
+               "
+                      dsn[i] <- ((2 / scale)
+                        * dnorm((log.y[i] - location[i]) / scale, 0, 1)
+                        * pnorm(skew * (log.y[i] - location[i]) / scale, 0, 1 ))
+                      spy[i] <- dsn[i] / C
+                      ones[i] ~ dbern(spy[i])
+
+                      u1[i] ~ dnorm(0, 1)
+                      u2[i] ~ dnorm(0, 1)
+
+                      z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
+                      pred[i] = scale * z[i] + location[i]
+
+                    }")
+      }else{
+        paste0("
+                    Mu ~ dnorm(0, 0.000001)
+                    scale0 ~ dgamma(1.105, 0.105)
+                    skew ~ dnorm(0, 0.001)
+
+                    for(i in 1:N){",
+               meanModel,
+               "
+                      dsn[i] <- ((2 / scale[i])
+                        * dnorm((log.y[i] - location[i]) / scale[i], 0, 1)
+                        * pnorm(skew * (log.y[i] - location[i]) / scale[i], 0, 1 ))
+                      spy[i] <- dsn[i] / C
+                      ones[i] ~ dbern(spy[i])
+                      scale[i] <- scale0 / aph[profile[i]]
+
+
+                      u1[i] ~ dnorm(0, 1)
+                      u2[i] ~ dnorm(0, 1)
+
+                      z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
+                      pred[i] = scale[i] * z[i] + location[i]
+                    }")
+      }
+      modelString = paste0(modelString, main, "\n}")
+    }
   }
+
 
   modelString = paste(tidy_source(text = modelString, arrow = FALSE, indent = 2)$text.tidy, collapse = "\n")
 }
@@ -231,7 +353,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
 #' @examples
 #' data.df = readData()
 #' makeBUGSinputs(data = data.df)
-makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("gamma", "normal"),
+makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("gamma", "normal", "sn"),
                           genInits = FALSE){
   if(!is_formula(form)){
     stop("form must be a formula")
@@ -257,7 +379,7 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
     bugsData = list(y = data.df$obs,
                     N = length(data.df$obs),
                     aph = aveLogPeakHeight)
-  }else{
+  }else if(responseDist == "normal"){
     aveLogPeakHeight = data.df %>%
       group_by(prof) %>%
       summarise(alph = mean(log(obs), na.rm = TRUE)) %>%
@@ -266,6 +388,26 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
     bugsData = list(log.y = log(data.df$obs),
                     N = length(data.df$obs),
                     aph = aveLogPeakHeight)
+  }else{
+    aveLogPeakHeight = data.df %>%
+      group_by(prof) %>%
+      summarise(alph = mean(log(obs), na.rm = TRUE)) %>%
+      pull(alph)
+
+    ## this is crappy and needs to be improved:
+    fit = c(7.7640143, 0.9944676, 0.8056984)
+    C = 1.1 * max(dsn(
+      seq(-10, 10, length = 1001) ,
+      xi = fit[1],
+      omega = fit[2],
+      alpha = fit[3]
+    ))
+
+    bugsData = list(log.y = log(data.df$obs),
+                    N = length(data.df$obs),
+                    aph = aveLogPeakHeight,
+                    ones = rep(1, length(data.df$obs)),
+                    C = C)
   }
 
   m = match(c("locus", "profile", "dye", "X", "V"), vars)

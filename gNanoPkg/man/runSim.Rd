@@ -4,8 +4,9 @@
 \alias{runSim}
 \title{Run a simulation/fit the model}
 \usage{
-runSim(form, data, simPath, simRoot, responseDist = c("gamma", "normal"),
-  genInits = FALSE, nUpdate = 10000, nChains = 1, nIter = 1000)
+runSim(form, data, simPath, simRoot, responseDist = c("gamma", "normal",
+  "sn"), genInits = FALSE, nUpdate = 10000, nChains = 1,
+  nIter = 1000)
 }
 \description{
 Run a simulation/fit the model

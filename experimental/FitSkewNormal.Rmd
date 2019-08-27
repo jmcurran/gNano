@@ -1,0 +1,440 @@
+---
+title: "FitSkewNormal"
+author: "James Curran"
+date: "20/08/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(gNanoPkg)
+```
+
+## Load the data
+
+I just want to see how the distribution fits without structure. So I am going to pull out the peak heights, log them, and then try and use MLE to fit the skew-normal
+
+```{r}
+gNano.df = readData()
+y = log(gNano.df$obs)
+```
+
+## This is kind of a cheat
+```{r}
+library(fGarch)
+fit = snormFit(y)
+fit$par
+```
+
+How well does it fit?
+
+```{r}
+n = 4069
+p = ppoints(n)
+q = qsnorm(p, mean = fit$par[1], sd = fit$par[2], xi = fit$par[3])
+q1 = quantile(y, probs = p)
+plot(q~q1)
+```
+
+Seems fairly good. Let's try a skew-t
+
+
+```{r}
+sstdFit(y)
+```
+
+Well with an estimated 100 df, I think the skew t is pretty much the skew normal.
+
+Does it fit better than gamma?
+
+```{r}
+objFunc = function(x){
+  shape = x[1]
+  rate = x[2]
+  
+  -sum(dgamma(exp(y), shape, rate, log = TRUE))
+}
+
+x0 = c(1,1)
+nlminb(x0, objFunc, lower = c(1e-5, 1e-6), upper = c(100, 100))
+```
+
+
+
+Let's try it again with dsn
+
+```{r}
+library(sn)
+
+objFunc = function(x){
+  xi = x[1]
+  omega = x[2]
+  alpha = x[3]
+  
+  -sum(dsn(y, xi, omega, alpha, log = TRUE))
+}
+
+x0 = c(mean(y), stats::sd(y), 0.8)
+fit2 = nlminb(x0, objFunc, lower = c(-Inf, 0, -Inf), upper = c(Inf, Inf, Inf))
+fit2$par
+fit2$objective
+```
+
+Interestingly close to the other. However, I don't believe these are parameterized the same way.
+
+## Can I make John K's example work for this?
+
+```{r}
+# Scaling constant for use in JAGS Bernoulli ones trick:
+dsnMax = 1.1 * max(dsn(
+  seq(-10, 10, length = 1001) ,
+  xi = fit$par[1],
+  omega = fit$par[2],
+  alpha = fit$par[3]
+))
+# Assemble data for JAGS:
+bugsData = list(
+  log.y = y,
+  N = length(y) ,
+  ones = rep(1, length(y)) ,
+  C = dsnMax # constant for keeping scaled dsn < 1
+)
+
+# Define the JAGS model using Bernoulli ones trick
+# as explained in DBDA2E Section 8.6.1 pp. 214-215.
+modelString = "
+model {
+  for (i in 1:N ) {
+    dsn[i] <- ( (2/scale)
+                * dnorm( (y[i]-locat)/scale , 0 , 1 )
+                * pnorm( skew*(y[i]-locat)/scale , 0 , 1 ) )
+    spy[i] <- dsn[i] / C
+    ones[i] ~ dbern( spy[i] )
+  }
+  scale ~ dgamma(1.105,0.105)
+  locat ~ dnorm(0, 0.001)
+  skew ~ dnorm(0, 0.001)
+}
+" # close quote for modelString
+writeLines(modelString, "sn-0.bugs.R")
+
+model = jags.model("~/Dropbox/Code/git/gNano/systematic/sn-0.bugs.R", data = bugsData )
+update(model, 10000)
+simSamples = coda.samples(model, c("locat", "scale", "skew"), n.iter = 10000, thin = 5)
+```
+
+```{r}
+stats = summary(simSamples)
+stats
+save(simSamples, stats, file = "sn-0.Rda")
+```
+
+
+```{r}
+plot.df = data.frame(logPeakHeight = y)
+
+params = stats$quantiles[,1]
+
+est.df = data.frame(x = seq(3, 11, length = 200))
+est.df = est.df %>% 
+  mutate(bayesfit = dsn(x, dp = params)) %>% 
+  mutate(mlefit = dsn(x, dp = fit$par))
+
+p = ggplot(plot.df, aes(x = logPeakHeight)) + 
+  geom_histogram(aes(y = ..density..), bins = 50, color = "grey30", fill = "white") +
+  geom_density(alpha = .2, fill = "lightblue", color = "black") +
+  geom_line(data = est.df, aes(x = x, y = bayesfit), color = "red") + 
+  geom_line(data = est.df, aes(x = x, y = mlefit), color = "blue")  
+
+p
+```
+
+Somewhat interestingly the ML estimates are just way off. Bizarre.
+
+David Scott gave me some code for fitting the hyperbolic distribution. I've actually conjectured for a long time that it might be something to look at it, and the results suggest that we really should. The difficulty is that the implementation requires modified Bessel functions of the second kind which are difficult in themselves!
+
+```{r}
+library(GeneralizedHyperbolic)
+fitGH = hyperbFit(plot.df$logPeakHeight)
+par(mfrow = c(2,2))
+plot(fitGH)
+```
+
+
+So can I fit the profile model?
+
+```{r}
+modelString = "model
+{
+  
+  # beta is profile effect
+  beta.mu ~ dnorm(0, 1e-06)
+  beta.tau ~ dgamma(0.001, 0.001)
+  beta.sigma = 1/sqrt(beta.tau)
+  for (p in 1:(numProfiles - 1)) {
+    beta.profile[p] ~ dnorm(beta.mu, beta.tau)
+  }
+  beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
+  log.Mu ~ dnorm(0, 0.00001)
+  
+  for (i in 1:N) {
+    location[i] = log.Mu + beta.profile[profile[i]]
+    
+    dsn[i] <- ( (2/scale)
+                * dnorm( (y[i] - location[i]) / scale , 0 , 1 )
+                * pnorm( skew * (y[i] - location[i]) / scale , 0 , 1 ) )
+    spy[i] <- dsn[i] / C
+    ones[i] ~ dbern( spy[i] )
+  }
+  
+  scale ~ dgamma(1.105,0.105)
+  skew ~ dnorm(0, 0.001)
+}"
+writeLines(modelString, "sn-1.bugs.R")
+```
+
+
+```{r}
+bugsData = gNanoPkg::makeBUGSinputs(y~profile, gNano.df, "normal")$bugsData
+bugsData$C = 1.1 * max(dsn(
+  seq(-10, 10, length = 1001) ,
+  xi = fit$par[1],
+  omega = fit$par[2],
+  alpha = fit$par[3]
+))
+bugsData$y = bugsData$log.y
+bugsData$ones = rep(1, length(bugsData$y))
+bugsData = bugsData[-c(1,3)]
+
+model = jags.model("sn-1.bugs.R", data = bugsData )
+update(model, 10000)
+simSamples = coda.samples(model, c("location", "scale", "skew"), n.iter = 10000, thin = 5)
+stats = summary(simSamples)
+save(simSamples, stats, file = "sn-1.Rda")
+```
+
+
+Let's see if we improved the log-likelihood first
+
+```{r}
+library(dplyr)
+library(magrittr)
+library(tidyr)
+load("sn-1.Rda")
+sn1.df = as.data.frame(simSamples[[1]])
+
+lss.df = sn1.df %>% 
+  pivot_longer(cols = everything(), names_to = "parameter")
+  
+nObs = length(gNano.df$obs)
+
+lss.df = lss.df %>% 
+  mutate(parameter = gsub("^(location|skew|scale)(([.]|\\[)([0-9]+)([.]|\\]))?$", "\\1", parameter))
+
+location.df = lss.df %>% 
+  filter(parameter == "location")
+
+location.df = lss.df[lss.df$parameter == "location",]
+scale.df = lss.df[lss.df$parameter == "scale",]
+skew.df = lss.df[lss.df$parameter == "skew",] 
+## I should be able to do all of this with filter from dplyr but it is giving me some shit about coercion to NAs which I can't be bothered with on a Friday afternoon
+
+
+lss.df = data.frame(
+  obs = rep(1:4069, 2000),
+  y = rep(log(gNano.df$obs), 2000),
+  location = location.df$value,
+  scale = rep(scale.df$value, rep(nObs, 2000)),
+  skew = rep(skew.df$value, rep(nObs, 2000))
+)
+
+lss.df = lss.df %>% 
+  mutate(rep = rep(1:2000, rep(nObs, 2000)))
+
+l1.df = lss.df %>% 
+  filter(rep == 1)
+```
+
+For this to work without a warning we need to "fix" the `dsn` function
+
+```{r}
+mydsn = function (x, xi = 0, omega = 1, alpha = 0, tau = 0, dp = NULL, 
+    log = FALSE) 
+{
+    if (!is.null(dp)) {
+        if (!missing(alpha)) 
+            stop("You cannot set both 'dp' and component parameters")
+        xi <- dp[1]
+        omega <- dp[2]
+        alpha <- dp[3]
+        tau <- if (length(dp) > 3) 
+            dp[4]
+        else 0
+    }
+    z <- (x - xi)/omega
+    logN <- (-log(sqrt(2 * pi)) - logb(omega) - z^2/2)
+    if (any(abs(alpha) < Inf)) 
+        logS <- pnorm(tau * sqrt(1 + alpha^2) + alpha * z, log.p = TRUE)
+    else logS <- log(as.numeric(sign(alpha) * z + tau > 0))
+    logPDF <- as.numeric(logN + logS - pnorm(tau, log.p = TRUE))
+    logPDF <- replace(logPDF, abs(x) == Inf, -Inf)
+    logPDF <- replace(logPDF, omega <= 0, NaN)
+    if (log) 
+        logPDF
+    else exp(logPDF)
+}
+```
+
+```{r}
+library(sn)
+sn1.ll = lss.df %>% 
+  group_by(rep) %>% 
+  summarise(ll = sum(mydsn(y, xi = location, omega = scale, alpha = skew, log = TRUE)))
+p = sn1.ll %>%  ggplot(aes(x=ll)) + geom_density()
+p
+```
+
+
+Okay! Improvement. Let's whack it up a notch and do models 3 and 4
+
+
+```{r}
+modelString = "model
+{
+  
+# alpha is locus effect
+  alpha.mu ~ dnorm(0, 1e-06)
+  alpha.tau ~ dgamma(0.001, 0.001)
+  alpha.sigma = 1/sqrt(alpha.tau)
+  for (l in 1:(numLoci - 1)) {
+    alpha.locus[l] ~ dnorm(alpha.mu, alpha.tau)
+  }
+  alpha.locus[numLoci] = -sum(alpha.locus[1:(numLoci - 1)])
+  
+  # beta is profile effect
+  beta.mu ~ dnorm(0, 1e-06)
+  beta.tau ~ dgamma(0.001, 0.001)
+  beta.sigma = 1/sqrt(beta.tau)
+  for (p in 1:(numProfiles - 1)) {
+    beta.profile[p] ~ dnorm(beta.mu, beta.tau)
+  }
+  beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
+  
+  # gamma is profile effect
+  gamma.mu ~ dnorm(0, 1e-06)
+  gamma.tau ~ dgamma(0.001, 0.001)
+  gamma.sigma = 1/sqrt(gamma.tau)
+  for (p in 1:(numDyes - 1)) {
+    gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
+  }
+  gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+  
+  log.Mu ~ dnorm(0, 0.00001)
+  
+  for (i in 1:N) {
+    location[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    
+    dsn[i] <- ( (2/scale)
+                * dnorm( (y[i] - location[i]) / scale , 0 , 1 )
+                * pnorm( skew * (y[i] - location[i]) / scale , 0 , 1 ) )
+    spy[i] <- dsn[i] / C
+    ones[i] ~ dbern( spy[i] )
+  }
+  
+  scale ~ dgamma(1.105,0.105)
+  skew ~ dnorm(0, 0.001)
+}"
+writeLines(modelString, "sn-3.bugs.R")
+```
+
+
+```{r}
+bugsData = gNanoPkg::makeBUGSinputs(y~profile+locus+dye+X, gNano.df, "normal")$bugsData
+bugsData$C = 1.1 * max(dsn(
+  seq(-10, 10, length = 1001) ,
+  xi = fit$par[1],
+  omega = fit$par[2],
+  alpha = fit$par[3]
+))
+bugsData$y = bugsData$log.y
+bugsData$ones = rep(1, length(bugsData$y))
+bugsData = bugsData[-c(1,3)]
+
+model = jags.model("sn-3.bugs.R", data = bugsData )
+update(model, 10000)
+simSamples = coda.samples(model, c("location", "scale", "skew"), n.iter = 10000, thin = 5)
+stats = summary(simSamples)
+save(simSamples, stats, file = "sn-3.Rda")
+```
+
+
+```{r}
+modelString = "model
+{
+  
+# alpha is locus effect
+  alpha.mu ~ dnorm(0, 1e-06)
+  alpha.tau ~ dgamma(0.001, 0.001)
+  alpha.sigma = 1/sqrt(alpha.tau)
+  for (l in 1:(numLoci - 1)) {
+    alpha.locus[l] ~ dnorm(alpha.mu, alpha.tau)
+  }
+  alpha.locus[numLoci] = -sum(alpha.locus[1:(numLoci - 1)])
+  
+  # beta is profile effect
+  beta.mu ~ dnorm(0, 1e-06)
+  beta.tau ~ dgamma(0.001, 0.001)
+  beta.sigma = 1/sqrt(beta.tau)
+  for (p in 1:(numProfiles - 1)) {
+    beta.profile[p] ~ dnorm(beta.mu, beta.tau)
+  }
+  beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
+  
+  # gamma is profile effect
+  gamma.mu ~ dnorm(0, 1e-06)
+  gamma.tau ~ dgamma(0.001, 0.001)
+  gamma.sigma = 1/sqrt(gamma.tau)
+  for (p in 1:(numDyes - 1)) {
+    gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
+  }
+  gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+  
+  log.Mu ~ dnorm(0, 0.00001)
+  scale0 ~ dgamma(1.105,0.105)
+  
+  for (i in 1:N) {
+    location[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    scale[i] <- scale0 / aph[profile[i]]
+    dsn[i] <- ( (2/scale[i])
+                * dnorm( (y[i] - location[i]) / scale[i] , 0 , 1 )
+                * pnorm( skew * (y[i] - location[i]) / scale[i] , 0 , 1 ) )
+    spy[i] <- dsn[i] / C
+    ones[i] ~ dbern( spy[i] )
+  }
+  
+  skew ~ dnorm(0, 0.001)
+}"
+writeLines(modelString, "sn-4.bugs.R")
+```
+
+
+```{r}
+bugsData = gNanoPkg::makeBUGSinputs(y~profile+locus+dye+X+V, gNano.df, "normal")$bugsData
+bugsData$C = 1.1 * max(dsn(
+  seq(-10, 10, length = 1001) ,
+  xi = fit$par[1],
+  omega = fit$par[2],
+  alpha = fit$par[3]
+))
+bugsData$y = bugsData$log.y
+bugsData$ones = rep(1, length(bugsData$y))
+bugsData = bugsData[-c(1)]
+```
+
+```{r}
+model = jags.model("sn-4.bugs.R", data = bugsData )
+update(model, 10000)
+simSamples = coda.samples(model, c("location", "scale", "skew"), n.iter = 10000, thin = 5)
+stats = summary(simSamples)
+save(simSamples, stats, file = "sn-4.Rda")
+```

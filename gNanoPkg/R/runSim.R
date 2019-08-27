@@ -10,7 +10,7 @@
 
 #' @export
 runSim = function(form, data, simPath, simRoot,
-                  responseDist = c("gamma", "normal"),
+                  responseDist = c("gamma", "normal", "sn"),
                   genInits = FALSE,
                   nUpdate = 10000, nChains = 1, nIter = 1000){
 
@@ -27,14 +27,14 @@ runSim = function(form, data, simPath, simRoot,
 
   ## compile the model
   if(genInits){
-    system.time({sim = jags.model(file = bugsFile,
-                                  data = bugsInput$bugsData,
-                                  inits = list(bugsInput$bugsInits),
-                                  n.chains = nChains)})
+    sim = jags.model(file = bugsFile,
+                     data = bugsInput$bugsData,
+                     inits = list(bugsInput$bugsInits),
+                     n.chains = nChains)
   }else{
-    system.time({sim = jags.model(file = bugsFile,
-                                  data = bugsInput$bugsData,
-                                  n.chains = nChains)})
+    sim = jags.model(file = bugsFile,
+                     data = bugsInput$bugsData,
+                     n.chains = nChains)
   }
   update(sim, nUpdate)
 
@@ -45,15 +45,21 @@ runSim = function(form, data, simPath, simRoot,
 
   if(responseDist == "gamma"){
     parameters = c(parameters, "log.Mu", "shape", "rate")
-  }else{
+  }else if(responseDist == "normal"){
     parameters = c(parameters, "Mu")
 
     if(any(unlist(effects))){ ## any other model than ln-0
       parameters = c(parameters, "mu")
     }
+  }else{
+      parameters = c(parameters, "location", "scale", "skew")
+
+      if(any(effects)){
+        parameters = c(parameters, "Mu")
+      }
   }
 
-  
+
   if(effects$bLocusEffect){
     parameters = c(parameters, "alpha.mu", "alpha.sigma", "alpha.locus")
   }
@@ -66,10 +72,11 @@ runSim = function(form, data, simPath, simRoot,
     parameters = c(parameters, "gamma.mu", "gamma.sigma", "gamma.dye")
   }
 
-  if(effects$bVarEffect){
+  if(effects$bVarEffect & responseDist != "sn"){
     parameters = c(parameters, "tau", "tau0")
   }else{
-    parameters = c(parameters, "tau")
+    if(responseDist != "sn")
+      parameters = c(parameters, "tau")
   }
 
 

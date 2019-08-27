@@ -17,3 +17,8 @@ runSim(y~profile + locus, data = data.df, simPath = simPath, simRoot = "ln-2", r
 runSim(y~profile + locus + dye + X, data = data.df, simPath = simPath, simRoot = "ln-3", responseDist = "normal")
 runSim(y~profile + locus + dye + X + V, data = data.df, simPath = simPath, simRoot = "ln-4", responseDist = "normal")
 
+runSim(y~1, data = data.df, simPath = simPath, simRoot = "sn-0", responseDist = "sn")
+runSim(y~profile, data = data.df, simPath = simPath, simRoot = "sn-1", responseDist = "sn")
+runSim(y~profile + locus, data = data.df, simPath = simPath, simRoot = "sn-2", responseDist = "sn")
+runSim(y~profile + locus + dye + X, data = data.df, simPath = simPath, simRoot = "sn-3", responseDist = "sn")
+runSim(y~profile + locus + dye + X + V, data = data.df, simPath = simPath, simRoot = "sn-4", responseDist = "sn")
