@@ -34,3 +34,9 @@ sn4.df = loadResults("sn-4", resultsRoot = resultsRoot)
 sn4.ll = calcLogLik(sn4.df, "sn")
 
 compareLL(sn3.ll, sn4.ll, "sn-3", "sn-4")
+
+ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
+ln4.ll = calcLogLik(ln4.df, "ln")
+gNanoPkg:::obsExpectPlot(ln4.df, "ln")
+
+compareLL(sn3.ll, ln4.ll, "sn-3", "ln-4")

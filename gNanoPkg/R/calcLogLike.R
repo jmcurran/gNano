@@ -7,12 +7,13 @@
 #' @export
 #'
 #' @examples
-calcLogLik = function(results.df, responseDist = c("g", "ln", "sn"), n.iter = 1000){
+calcLogLik = function(results.df, responseDist = c("g", "ln", "sn")){
 
   responseDist = match.arg(responseDist)
 
   gNano.df = readData()
   nObs = length(gNano.df$obs)
+  n.iter = nrow(results.df)
 
   if(responseDist == "g"){
     sr.df = results.df %>%
@@ -70,6 +71,12 @@ calcLogLik = function(results.df, responseDist = c("g", "ln", "sn"), n.iter = 10
   }else if(responseDist == "ln"){
     ms.df = results.df %>%
       select(matches("^(mu|tau)(([.]|\\[)[0-9]+([.]|\\]))?$"))
+
+    ## this deals with ln-0
+    if(any(grepl("^mu\\[", names(ms.df)))){
+      ms.df = ms.df %>%
+        select(-matches("^Mu$", ingore.case = FALSE))
+    }
 
     ms.df = ms.df %>%
       pivot_longer(cols = everything(), names_to = "parameter") %>%

@@ -4,8 +4,7 @@
 \alias{calcLogLik}
 \title{Calculate the log-likelihood}
 \usage{
-calcLogLik(results.df, responseDist = c("g", "ln", "sn"),
-  n.iter = 1000)
+calcLogLik(results.df, responseDist = c("g", "ln", "sn"))
 }
 \arguments{
 \item{responseDist}{}
