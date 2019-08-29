@@ -9,4 +9,6 @@ License: GPL(>=2)
 Encoding: UTF-8
 LazyData: true
 Depends: rjags, tidyverse, glue, formatR, here, sn
+Imports: tidyr
+Remotes: tidyverse/tidyr
 RoxygenNote: 6.1.1
