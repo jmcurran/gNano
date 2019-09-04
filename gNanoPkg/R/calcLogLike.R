@@ -75,7 +75,7 @@ calcLogLik = function(results.df, responseDist = c("g", "ln", "sn")){
     ## this deals with ln-0
     if(any(grepl("^mu\\[", names(ms.df)))){
       ms.df = ms.df %>%
-        select(-matches("^Mu$", ingore.case = FALSE))
+        select(-matches("^Mu$", ignore.case = FALSE))
     }
 
     ms.df = ms.df %>%
@@ -192,7 +192,7 @@ calcLogLik = function(results.df, responseDist = c("g", "ln", "sn")){
 
     ll.df = lss.df %>%
       group_by(rep) %>%
-      summarise(ll = sum(.dsn(y, xi = location, omega = scale, alpha = skew, log = TRUE)))
+      summarise(ll = sum(.dsn(y, xi = location, omega = scale, alpha = skew, log = TRUE)) - sum(y))
   }
 
   return(ll.df)
