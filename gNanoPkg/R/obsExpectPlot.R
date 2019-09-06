@@ -61,7 +61,7 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
           xlab("Fitted (posterior mean)")
       }else{
         plot.df %>%
-          ggplot(aes(linetype = "dashed", colour = "grey", alpha = 0.2), aes(y = mean, x = observed)) +
+          ggplot(aes(y = mean, x = observed)) +
             geom_point() +
             geom_abline(intercept = 0, slope = 1) +
             geom_smooth(col = "blue") +

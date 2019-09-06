@@ -33,7 +33,7 @@ model
   
   for (i in 1:N) {
     mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
-    log.y[i] ~ dnorm(mu[i], tau[i])
+    y[i] ~ dlnorm(mu[i], tau[i])
     
     tau[i] = aph[profile[i]] * tau0
     

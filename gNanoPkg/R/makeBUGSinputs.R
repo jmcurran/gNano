@@ -138,7 +138,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
             Mu ~ dnorm(0, 0.00001)
             tau ~ dgamma(0.001, 0.001)
             for(i in 1:N){
-              log.y[i] ~ dnorm(Mu, tau)
+              y[i] ~ dlnorm(Mu, tau)
               pred[i] ~ dnorm(Mu, tau)
             }
         }"
@@ -149,7 +149,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
             tau0 ~ dgamma(0.001, 0.001)
 
             for(i in 1:N){
-              log.y[i] ~ dnorm(Mu, tau[i])
+              y[i] ~ dlnorm(Mu, tau[i])
 
               tau[i] = aph[profile[i]] * tau0
 
@@ -191,7 +191,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
                       for(i in 1:N){",
                       meanModel,
                       "
-                      log.y[i] ~ dnorm(mu[i], tau)
+                      y[i] ~ dlnorm(mu[i], tau)
                       pred[i] ~ dnorm(mu[i], tau)
                       }")
         }else{
@@ -202,7 +202,7 @@ buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE
                       for(i in 1:N){",
                  meanModel,
                  "
-                      log.y[i] ~ dnorm(mu[i], tau[i])
+                      y[i] ~ dlnorm(mu[i], tau[i])
 
                       tau[i] = aph[profile[i]] * tau0
 
@@ -385,7 +385,7 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
       summarise(alph = mean(log(obs), na.rm = TRUE)) %>%
       pull(alph)
 
-    bugsData = list(log.y = log(data.df$obs),
+    bugsData = list(y = data.df$obs,
                     N = length(data.df$obs),
                     aph = aveLogPeakHeight)
   }else{

@@ -4,16 +4,12 @@
 \alias{compareLL}
 \title{Compare log-likelihoods}
 \usage{
-compareLL(model1LL.df, model2LL.df, model1lab = NULL, model2lab = NULL)
+compareLL(..., labels = NULL)
 }
 \arguments{
-\item{model1LL.df}{data frame containing log likelihood from model 1 - comes from calcLogLik}
+\item{\dots}{two or more data frames containing log likelihoods which come from calcLogLik}
 
-\item{model2LL.df}{data frame containing log likelihood from model 2 - comes from calcLogLik}
-
-\item{model1lab}{optional label for model 1}
-
-\item{model2lab}{optional label for model 2}
+\item{lables}{an optional vector of label for each model}
 }
 \description{
 Compare log-likelihoods
