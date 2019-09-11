@@ -378,7 +378,7 @@ Now we move on the the log normal models
 Tau
 
 ```{r}
-ln0.df = loadResults("ln-0")
+ln0.df = loadResults("ln-0", resultsRoot = resultsRoot)
 
 p = ln0.df %>% 
   ggplot(aes(x = tau)) +
@@ -398,23 +398,12 @@ p
 Comparing expected and observed peak heights
 
 ```{r}
-gNano.df = readData()
-expected = ln0.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(ln0.df, "ln")
+```
+and the pred-res plot
+
+```{r}
+obsExpectPlot(ln0.df, "ln", TRUE)
 ```
 
 ## Model $ln_1$ - profile effects
@@ -422,39 +411,13 @@ p
 Load the data
 
 ```{r}
-ln1.df = loadResults("ln-1")
+ln1.df = loadResults("ln-1", resultsRoot = resultsRoot)
 ```
 
 Showing the per profile effects
 
 ```{r}
-lb = ln1.df %>% 
-    select(starts_with("beta.profile")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = ln1.df %>% 
-  select(starts_with("beta.profile")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = ln1.df %>% 
-  select(starts_with("beta.profile")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(profile = 1:102)
-
-p = ggplot(data = quantiles.df, aes(x = profile, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(tau[c])) + 
-  xlab("Profile") + 
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-  
-p
+effectsPlot(ln1.df, "profile")
 ```
 
 Now showing the relationship between profile aph and profile effects from model
@@ -485,76 +448,30 @@ p
 Plotting observed vs expected peak heights
 
 ```{r}
-expected = ln1.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(ln1.df, "ln")
 ```
+and the pred-res plot
 
+```{r}
+obsExpectPlot(ln1.df, "ln", TRUE)
+```
 ## Model $ln_2$ - locus effects
 
 ```{r}
-ln2.df = loadResults("ln-2")
+ln2.df = loadResults("ln-2", resultsRoot = resultsRoot)
 
-lb = ln2.df %>% 
-    select(starts_with("alpha.locus")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = ln2.df %>% 
-  select(starts_with("alpha.locus")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = ln2.df %>% 
-  select(starts_with("alpha.locus")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(locus = 1:31)
-
-p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(alpha[l])) + 
-  xlab("Locus") + 
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+effectsPlot(ln2.df, "locus")
 ```
 
 Plot the expected vs observed peak heights
 ```{r}
-expected = ln2.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) +
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(ln2.df, "ln")
 ```
+and the pred-res
+```{r}
+obsExpectPlot(ln2.df, "ln", TRUE)
+```
+
 
 Plot the locus effects by Average Peak Height:
 
@@ -586,35 +503,8 @@ p
 Dye effects
 
 ```{r}
-ln3.df = loadResults("ln-3")
-
-
-lb = ln3.df %>% 
-    select(starts_with("gamma.dye")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = ln3.df %>% 
-  select(starts_with("gamma.dye")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = ln3.df %>% 
-  select(starts_with("gamma.dye")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(dye = 1:4)
-
-p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(delta[f])) + 
-  xlab("Dye") +
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+ln3.df = loadResults("ln-3", resultsRoot = resultsRoot)
+effectsPlot(ln3.df, "dye")
 ```
 
 Plot the dye effects by Average Peak Height - no fitted line here because with four points who cares:
@@ -645,31 +535,19 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-expected = ln3.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(exp(expected)))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) +
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(ln3.df, "ln")
 ```
-
+and the pred-res
+```{r}
+obsExpectPlot(ln3.df, "ln", TRUE)
+```
 
 ## Model $ln_4$ - extra variance
 
 Is the added variance being used?
 
 ```{r}
-ln4.df = loadResults("ln-4")
+ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
 
 ln4.df = ln4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
@@ -687,342 +565,57 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-expected.ln4 = ln4.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected.ln4 = expected.ln4)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(exp(expected.ln4)))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) +
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(ln4.df, "ln")
 ```
-
-compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
+And the pred-res
 
 ```{r}
-# You need the latest version of tidyr to make this work. 
-# The commands to do this are on the next line
-# devtools::install_github("tidyverse/tidyr")
-library(tidyr)
-
-#loads the gamma model 4
-g4.df = loadResults("g-4")
-
-sr.df = g4.df %>% 
-  select(c(starts_with("shape"), starts_with("rate"))) 
-
-sr.df = sr.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
-
-sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
-
-shape.df = sr.df %>% 
-  filter(parameter == "shape")
-
-rate.df = sr.df %>% 
-  filter(parameter == "rate")
-
-sr.df = data.frame(
-  obs = shape.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  shape = shape.df$value,
-  rate = rate.df$value
-)
-
-sr.df = sr.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-g4.ll = sr.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dgamma(y, shape, rate, log = TRUE)))
-
-p = g4.ll %>% 
-  ggplot(aes(x = ll)) + geom_histogram()
-p
-
-#loads the log-normal model 4
-ln4.df = loadResults("ln-4")
-
-ms.df = ln4.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau([.]|\\[)[0-9]+([.]|\\])$"))) 
-
-ms.df = ms.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-ms.df = ms.df %>% 
-  mutate(obs = as.numeric(gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
-
-ms.df = ms.df %>% 
-  mutate(parameter = gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
-
-mu.df = ms.df %>% 
-  filter(parameter == "mu")
-
-sigma.df = ms.df %>% 
-  filter(parameter == "tau") %>% 
-  mutate(sigma = 1 / sqrt(value)) %>% 
-  select(-value)
-
-ms.df = data.frame(
-  obs = mu.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  mu = mu.df$value,
-  sigma = sigma.df$sigma
-)
-
-ms.df = ms.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-ln4.ll = ms.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dlnorm(y, mu, sigma, log = TRUE)))
-
-plot.df = left_join(g4.ll, ln4.ll, by = c("rep" = "rep")) %>% 
-  rename(g4 = ll.x, ln4 = ll.y) 
-# %>% 
-#   pivot_longer(cols = c(g4, ln4), names_to = "model")
-
-#plots densities
-p = ggplot(plot.df) 
-p = p + geom_density(aes(x = g4), col="blue")
-p = p + geom_density(aes(x = ln4), col="red")
-p = p + xlab(expression(log[10]~(likelihood)))
-p = p + ylab("density")
-p = p + theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"), legend.position = "right", legend.justification = "top-right")
-p = p + scale_colour_manual(name="distribution", breaks =c("gamma", "log-normal"), values = c("blue", "red"))
-p = p + scale_x_continuous(limits=c(-35600, -34600))
-p
-
+obsExpectPlot(ln4.df, "ln", TRUE)
 ```
-
-
-comparing the g3 model and the g4 model
-```{r}
-# You need the latest version of tidyr to make this work. 
-# The commands to do this are on the next line
-# devtools::install_github("tidyverse/tidyr")
-library(tidyr)
-
-#loads the gamma model 4
-g4.df = loadResults("g-4")
-
-sr.df = g4.df %>% 
-  select(c(starts_with("shape"), starts_with("rate"))) 
-
-sr.df = sr.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
-
-sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
-
-shape.df = sr.df %>% 
-  filter(parameter == "shape")
-
-rate.df = sr.df %>% 
-  filter(parameter == "rate")
-
-sr.df = data.frame(
-  obs = shape.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  shape = shape.df$value,
-  rate = rate.df$value
-)
-
-sr.df = sr.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-g4.ll = sr.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dgamma(y, shape, rate, log = TRUE)))
-
-p = g4.ll %>% 
-  ggplot(aes(x = ll)) + geom_histogram()
-p
-
-
-
-g3.df = loadResults("g-3")
-
-
-sr.df = g3.df %>% 
-  select(c(starts_with("shape"), starts_with("rate"))) 
-
-sr.df = sr.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-sr.df = sr.df %>% 
-  mutate(obs = as.numeric(gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\2", parameter)))
-
-sr.df = sr.df %>% 
-  mutate(parameter = gsub("^(shape|rate)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
-
-shape.df = sr.df %>% 
-  filter(parameter == "shape")
-
-rate.df = sr.df %>% 
-  filter(parameter == "rate")
-
-sr.df = data.frame(
-  obs = shape.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  shape = shape.df$value,
-  rate = rate.df$value
-)
-
-sr.df = sr.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-g3.ll = sr.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dgamma(y, shape, rate, log = TRUE)))
-
-p = g3.ll %>% 
-  ggplot(aes(x = ll)) + geom_histogram()
-p
-
-
-
-plot.df = left_join(g4.ll, g3.ll, by = c("rep" = "rep")) %>% 
-  rename(g4 = ll.x, g3 = ll.y) 
-# %>% 
-#   pivot_longer(cols = c(g4, ln4), names_to = "model")
-
-#plots densities
-p = ggplot(plot.df) 
-p = p + geom_density(aes(x = g4), col="blue")
-p = p + geom_density(aes(x = g3), col="red")
-p = p + xlab(expression(log[10]~(likelihood)))
-p = p + ylab("density")
-p = p + theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"), legend.position = "right", legend.justification = "top-right")
-p = p + scale_colour_manual(name="distribution", breaks =c("gamma4", "gamma3"), values = c("blue", "red"))
-#p = p + scale_x_continuous(limits=c(-35600, -34600))
-p
-
-```
-
-compare the ln3 and ln4 models
+Compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
 
 ```{r}
-# You need the latest version of tidyr to make this work. 
-# The commands to do this are on the next line
-# devtools::install_github("tidyverse/tidyr")
-library(tidyr)
-
-#loads the log-normal model 3
-ln3.df = loadResults("ln-3")
-
-ms.df = ln3.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau$"))) 
-
-ms.df = ms.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-
-sigma.df = ms.df %>% 
-  filter(parameter == "tau") %>% 
-  mutate(sigma = 1 / sqrt(value)) %>% 
-  select(-value)
-
-nObs = length(gNano.df$obs)
-
-mu.df = ms.df %>% 
-  filter(grepl("^mu", parameter)) %>% 
-  mutate(obs = as.numeric(gsub("^mu([.]|\\[)([0-9]+)([.]|\\])$", "\\2", parameter))) %>% 
-  select(-parameter)
-
-
-ms.df = data.frame(
-  obs = mu.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  mu = mu.df$value,
-  sigma = rep(sigma.df$sigma, rep(nObs, 1000))
-)
-
-ms.df = ms.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-ln3.ll = ms.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dlnorm(y, mu, sigma, log = TRUE)))
-
-
-
-
-
-ln4.df = loadResults("ln-4")
-
-ms.df = ln4.df %>% 
-  select(c(starts_with("mu", ignore.case = FALSE), matches("^tau([.]|\\[)[0-9]+([.]|\\])$"))) 
-
-ms.df = ms.df %>% 
-  pivot_longer(cols = everything(), names_to = "parameter")
-  
-nObs = length(gNano.df$obs)
-
-ms.df = ms.df %>% 
-  mutate(obs = as.numeric(gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\3", parameter)))
-
-ms.df = ms.df %>% 
-  mutate(parameter = gsub("^(mu|tau)([.]|\\[)([0-9]+)([.]|\\])$", "\\1", parameter))
-
-mu.df = ms.df %>% 
-  filter(parameter == "mu")
-
-sigma.df = ms.df %>% 
-  filter(parameter == "tau") %>% 
-  mutate(sigma = 1 / sqrt(value)) %>% 
-  select(-value)
-
-ms.df = data.frame(
-  obs = mu.df$obs,
-  y = rep(gNano.df$obs, 1000),
-  mu = mu.df$value,
-  sigma = sigma.df$sigma
-)
-
-ms.df = ms.df %>% 
-  mutate(rep = rep(1:1000, rep(nObs, 1000)))
-
-ln4.ll = ms.df %>% 
-  group_by(rep) %>% 
-  summarise(ll = sum(dlnorm(y, mu, sigma, log = TRUE)))
-
-plot.df = left_join(ln3.ll, ln4.ll, by = c("rep" = "rep")) %>% 
-  rename(ln3 = ll.x, ln4 = ll.y) 
-# %>% 
-#   pivot_longer(cols = c(g4, ln4), names_to = "model")
-
-#plots densities
-p = ggplot(plot.df) 
-p = p + geom_density(aes(x = ln4), col="blue")
-p = p + geom_density(aes(x = ln3), col="red")
-p = p + xlab(expression(log[10]~(likelihood)))
-p = p + ylab("density")
-p = p + theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"), legend.position = "right", legend.justification = "top-right")
-p = p + scale_colour_manual(name="distribution", breaks =c("ln4", "ln3"), values = c("blue", "red"))
-# p = p + scale_x_continuous(limits=c(-35600, -34600))
-p
-
+ln4.ll = calcLogLik(ln4.df, "ln")
+g4.ll = calcLogLik(g4.df, "g")
+compareLL(ln4.ll, g4.ll, labels = c("LN-4", "G-4"))
 ```
+
+
+Comparing the g3 model and the g4 model
+```{r}
+g3.ll = calcLogLik(g3.df, "g")
+compareLL(g3.ll, g4.ll, labels = c("G-3", "G-4"))
+```
+
+Compare the ln3 and ln4 models
+
+```{r}
+ln3.ll = calcLogLik(ln3.df, "ln")
+compareLL(ln3.ll, ln4.ll, labels = c("LN-3", "LN-4"))
+```
+
+Compare all the ln models at once:
+
+```{r}
+ln0.ll = calcLogLik(ln0.df, "ln")
+ln1.ll = calcLogLik(ln1.df, "ln")
+ln2.ll = calcLogLik(ln2.df, "ln")
+compareLL(ln0.ll, ln1.ll, ln2.ll, ln3.ll, ln4.ll,
+          labels = paste0("LN-", 0:4))
+```
+LN-0 kind of distorts this so, let's drop it.
+
+```{r}
+compareLL(ln1.ll, ln2.ll, ln3.ll, ln4.ll,
+          labels = paste0("LN-", 1:4))
+```
+So no real value in the variance model. Definite gains in adding in dye and locus effects (and profile, but we don't care about those).
+
+
+## Does the removal of sum constraints matter?
+
+```{r}
+ln5.df = loadResults("ln-5", resultsRoot = resultsRoot)
+```
+
+
