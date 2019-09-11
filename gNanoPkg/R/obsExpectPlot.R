@@ -56,7 +56,8 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
         plot.df %>%
           ggplot(aes(x = mean, y = residuals)) +
           geom_point() +
-          geom_hline(aes(linetype = "dashed", colour = "grey", alpha = 0.2), yintercept = 0) +
+          geom_hline(linetype = "dashed", colour = "grey", alpha = 0.2,
+                     yintercept = 0) +
           geom_smooth() +
           xlab("Fitted (posterior mean)")
       }else{

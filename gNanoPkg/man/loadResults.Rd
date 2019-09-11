@@ -4,7 +4,7 @@
 \alias{loadResults}
 \title{Load results file}
 \usage{
-loadResults(model = c(paste0("g-", 0:4), paste0("ln-", 0:4),
+loadResults(model = c(paste0("g-", 0:4), paste0("ln-", 0:5),
   paste0("sn-", 0:4)), resultsRoot = "../systematic/", summary = FALSE)
 }
 \arguments{
