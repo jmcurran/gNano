@@ -36,21 +36,6 @@ resultsRoot = if(jamesDuncan){
   }else{
     "../gNanoPkg/systematic/"
   }
-
-loadResults = function(model = c(paste0("g-",0:4), paste0("ln-",0:4)),
-                       summary = FALSE){
-
-  model = match.arg(model)
-  
-  resultsFile = glue("{resultsRoot}{model}.Rda")
-  results = load(resultsFile)
-  
-  if(summary){
-    return(simSummary)
-  }
-  
-  return(as.data.frame(sim.sample[[1]]))
-}
 ```
 
 ## Model $g_0$ - no effects
@@ -75,7 +60,7 @@ Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\lo
 First I will load up the results.
 
 ```{r}
-g0.df = loadResults("g-0")
+g0.df = loadResults("g-0", resultsRoot = resultsRoot)
 ```
 
 
@@ -87,12 +72,7 @@ p = g0.df %>%
 p
 ```
 
-We want plots of shape and rate, so I will create them in the data frame first as we didn't store them during the sampling
-```{r}
-g0.df = g0.df %>% 
-  mutate(shape = exp(log.Mu)^2 * tau) %>% 
-  mutate(rate = exp(log.Mu) * tau)
-```
+We want plots of shape and rate.
 
 ```{r}
 p = g0.df %>% 
@@ -126,25 +106,10 @@ p = gNano.df %>%
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs the observed peak heights
 
 ```{r}
-expected = g0.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(g0.df, "g")
 ```
 
 
@@ -155,39 +120,13 @@ knitr::include_graphics("g1.png")
 
 Let's have a look at the profile effects. I like to use error bar plots 
 ```{r}
-g1.df = loadResults("g-1")
+g1.df = loadResults("g-1", resultsRoot = resultsRoot)
 ```
 
 
 This code is not elegant, and is probably stupid but then so is the tidyverse a lot of the time :-)
 ```{r}
-lb = g1.df %>% 
-    select(starts_with("beta.profile")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = g1.df %>% 
-  select(starts_with("beta.profile")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = g1.df %>% 
-  select(starts_with("beta.profile")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(profile = 1:102)
-
-p = ggplot(data = quantiles.df, aes(x = profile, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(tau[c])) + 
-  xlab("Profile") + 
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-  
-p
+effectsPlot(g1.df, "profile")
 ```
 
 ```{r}
@@ -215,25 +154,16 @@ p
 ```
 
 
-Plot the observed vs the expected peak heights
+Plot the expected vs the observed peak heights
 
 ```{r}
-expected = g1.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(g1.df, "g")
+```
+
+and a pred-res plot
+
+```{r}
+obsExpectPlot(g1.df, "g", predRes = TRUE)
 ```
 
 ## Model $g_2$ - locus effects
@@ -242,56 +172,23 @@ knitr::include_graphics("g2.png")
 ```
 
 ```{r}
-g2.df = loadResults("g-2")
+g2.df = loadResults("g-2", resultsRoot = resultsRoot)
 
-lb = g2.df %>% 
-    select(starts_with("alpha.locus")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = g2.df %>% 
-  select(starts_with("alpha.locus")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = g2.df %>% 
-  select(starts_with("alpha.locus")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(locus = 1:31)
-
-p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(alpha[l])) + 
-  xlab("Locus") + 
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+effectsPlot(g2.df, "locus")
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 
 ```{r}
-expected = g2.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(g2.df, "g")
 ```
+
+and the pred-res plot
+
+```{r}
+obsExpectPlot(g2.df, "g", TRUE)
+```
+
 
 Plot the locus effects by Average Peak Height:
 
@@ -326,34 +223,9 @@ knitr::include_graphics("g3.png")
 Dye effects
 
 ```{r}
-g3.df = loadResults("g-3")
+g3.df = loadResults("g-3", resultsRoot = resultsRoot)
 
-lb = g3.df %>% 
-    select(starts_with("gamma.dye")) %>% 
-    summarise_all(quantile, prob = c(0.025)) %>% 
-  unlist()
-
-med = g3.df %>% 
-  select(starts_with("gamma.dye")) %>% 
-  summarise_all(quantile, prob = c(0.5)) %>% 
-  unlist()
-
-ub = g3.df %>% 
-  select(starts_with("gamma.dye")) %>% 
-  summarise_all(quantile, prob = c(0.975)) %>% 
-  unlist()
-
-quantiles.df = data.frame(lb = lb, med = med, ub = ub) %>% 
-  mutate(dye = 1:4)
-
-p = ggplot(data = quantiles.df, aes(x = dye, y = quantiles.df$med)) +
-  geom_point(aes(col = "red"), show.legend = FALSE) + 
-  geom_errorbar(aes(ymin = lb, ymax = ub)) +
-  geom_hline(aes(yintercept=0)) +
-  ylab(bquote(delta[f])) + 
-  xlab("Dye") +
-  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+effectsPlot(g3.df, "dye")
 ```
 
 
@@ -382,25 +254,15 @@ p = plot.df %>%
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 
 ```{r}
-expected = g3.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(g3.df, "g")
+```
+and the pred-res plot
+
+```{r}
+g3.predRes = obsExpectPlot(g3.df, "g", TRUE)
 ```
 
 ## Model $g_4$ - extra variance
@@ -411,7 +273,7 @@ p
 Is the added variance being used?
 
 ```{r}
-g4.df = loadResults("g-4")
+g4.df = loadResults("g-4", resultsRoot = resultsRoot)
 
 g4.df = g4.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
@@ -426,32 +288,26 @@ p = g4.df %>%
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 
 ```{r}
-expected.g4 = g4.df %>% 
-  select(starts_with("pred")) %>% 
-  summarise_all(mean) %>% 
-  unlist()
-  
-plot.df = data.frame(observed = gNano.df$obs, expected.g4 = expected.g4, expected.g3 = expected)
-p = plot.df %>% 
-  ggplot(aes(x = log10(observed), y = log10(expected.g4))) +
-           geom_point() +
-           geom_abline(aes(intercept = 0, slope = 1)) + 
-          xlim(1, 5) +
-          ylim(1, 5) + 
-          xlab(expression(log[10]~(observed~height))) + 
-          ylab(expression(log[10]~(expected~height))) + 
-          theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
-p
+obsExpectPlot(g4.df, "g")
+```
+And the pred-res plot
+
+```{r}
+g4.predRes = obsExpectPlot(g4.df, "g", TRUE)
 ```
 
 Is it doing anything? 
 
 ```{r}
+plot.df = data.frame(
+  expected.g3 = g3.predRes$plot.df$mean,
+  expected.g4 = g4.predRes$plot.df$mean
+)
 p = plot.df %>% 
-  ggplot(aes(x = log10(expected.g3), y = log10(expected.g4))) +
+  ggplot(aes(x = expected.g3, y = expected.g4)) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(1, 5) +
@@ -464,7 +320,7 @@ I think it's doing what it is supposed to.
 Let's try and look at the expected values slightly differently. I will work with the summary stats rather than the raw data
 
 ```{r}
-simSummary = loadResults("g-3", summary = TRUE)
+simSummary = loadResults("g-3", resultsRoot = resultsRoot, summary = TRUE)
 
 g3.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
   select(starts_with("pred"))  %>%
@@ -484,7 +340,7 @@ g3.stats = as.data.frame(t(simSummary$statistics)) %>%
 
 
 
-simSummary = loadResults("g-4", summary = TRUE)
+simSummary = loadResults("g-4", resultsRoot = resultsRoot, summary = TRUE)
 
 g4.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
     select(starts_with("pred"))  %>%
@@ -680,7 +536,7 @@ p = ggplot(data = quantiles.df, aes(x = locus, y = quantiles.df$med)) +
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 ```{r}
 expected = ln2.df %>% 
   select(starts_with("pred")) %>% 
@@ -786,7 +642,7 @@ p = plot.df %>%
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 
 ```{r}
 expected = ln3.df %>% 
@@ -828,7 +684,7 @@ p = ln4.df %>%
 p
 ```
 
-Plot the observed vs the expected peak heights
+Plot the expected vs observed peak heights
 
 ```{r}
 expected.ln4 = ln4.df %>% 

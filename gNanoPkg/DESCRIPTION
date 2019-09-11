@@ -8,7 +8,7 @@ Description: Support package for gNano work
 License: GPL(>=2)
 Encoding: UTF-8
 LazyData: true
-Depends: rjags, tidyverse, glue, formatR, here, sn
+Depends: rjags, tidyverse, glue, formatR, here, sn, stringr
 Imports: tidyr
 Remotes: tidyverse/tidyr
 RoxygenNote: 6.1.1

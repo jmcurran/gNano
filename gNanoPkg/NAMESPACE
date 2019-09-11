@@ -2,6 +2,7 @@
 
 export(calcLogLik)
 export(compareLL)
+export(effectsPlot)
 export(loadResults)
 export(makeBUGSinputs)
 export(obsExpectPlot)

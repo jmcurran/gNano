@@ -71,7 +71,10 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
             xlim(1, 5) +
             ylim(1, 5) +
             xlab(expression(log[10]~(observed~height))) +
-            ylab(expression(log[10]~(expected~height)))
+            ylab(expression(log[10]~(expected~height))) +
+            theme(text = element_text(size = 20),
+                aspect.ratio = 1,
+                plot.background = element_rect(color="black"))
       }
 
   print(p)
