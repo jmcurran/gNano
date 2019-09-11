@@ -33,8 +33,10 @@ model
   skew ~ dnorm(0, 0.001)
   
   for (i in 1:N) {
-    location[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
-    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location[i])/scale, 0, 1) * pnorm(skew * (log.y[i] - location[i])/scale, 0, 1))
+    location[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
+      X[i]
+    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location[i])/scale, 0, 1) * pnorm(skew * 
+      (log.y[i] - location[i])/scale, 0, 1))
     spy[i] <- dsn[i]/C
     ones[i] ~ dbern(spy[i])
     

@@ -1,37 +1,61 @@
 buildModel = function(responseDist, bLocusEffect = FALSE, bProfileEffect = FALSE, bDyeEffect = FALSE, bDoseEffect = FALSE,
-                      bVarEffect = FALSE){
-  locusEffects = "
+                      bVarEffect = FALSE, bZST = TRUE){
+  locusEffects = paste0("
     #alpha is locus effect
     alpha.mu ~ dnorm(0, 0.000001)
     alpha.tau ~ dgamma(0.001, 0.001)
     alpha.sigma = 1 / sqrt(alpha.tau)
-    for(l in 1:(numLoci - 1)){
+    ",
+
+    ifelse(bZST,
+    "for(l in 1:(numLoci - 1)){
       alpha.locus[l] ~ dnorm(alpha.mu, alpha.tau)
     }
     alpha.locus[numLoci] = -sum(alpha.locus[1:(numLoci - 1)])
-  "
+    ",
+    "for(l in 1:numLoci){
+      alpha.locus[l] ~ dnorm(alpha.mu, alpha.tau)
+    }
+    ")
+  )
 
-  profileEffects = "
+  profileEffects = paste0("
     #beta is profile effect
     beta.mu ~ dnorm(0, 0.000001)
     beta.tau ~ dgamma(0.001, 0.001)
     beta.sigma = 1 / sqrt(beta.tau)
-    for(p in 1:(numProfiles - 1)){
-      beta.profile[p] ~ dnorm(beta.mu, beta.tau)
-    }
-    beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
-  "
+    ",
 
-  dyeEffects = "
+    ifelse(bZST,
+      "for(p in 1:(numProfiles - 1)){
+        beta.profile[p] ~ dnorm(beta.mu, beta.tau)
+      }
+      beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
+    ",
+      "for(p in 1:numProfiles){
+        beta.profile[p] ~ dnorm(beta.mu, beta.tau)
+      }
+    ")
+  )
+
+  dyeEffects = paste0("
     #gamma is profile effect
     gamma.mu ~ dnorm(0, 0.000001)
     gamma.tau ~ dgamma(0.001, 0.001)
     gamma.sigma = 1 / sqrt(gamma.tau)
-    for(p in 1:(numDyes - 1)){
-      gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
-    }
-    gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
-  "
+    ",
+    ifelse(bZST,
+      "for(p in 1:(numDyes - 1)){
+        gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
+      }
+      gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+    ",
+      "for(p in 1:numDyes){
+        gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
+      }
+      "
+    )
+  )
 
   if(responseDist == "gamma"){
     if(!any(c(bLocusEffect, bProfileEffect, bDyeEffect, bDoseEffect))){ #if there are no effects then return the simplest model
@@ -363,8 +387,8 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
 
   vars = attr(terms(form), "term.labels")
 
-  if(!all(grepl("locus|dye|profile|X|V", vars))){
-    mismatch = vars[-grep("locus|dye|profile|X|V", vars)]
+  if(!all(grepl("locus|dye|profile|X|V|ZST", vars))){
+    mismatch = vars[-grep("locus|dye|profile|X|V|ZST", vars)]
     paste0("The variables : ", mismatch, " don't match the list of allowable variables" )
   }
 
@@ -410,8 +434,8 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
                     C = C)
   }
 
-  m = match(c("locus", "profile", "dye", "X", "V"), vars)
-  names(m) = c("locus", "profile", "dye", "X", "V")
+  m = match(c("locus", "profile", "dye", "X", "V", "ZST"), vars)
+  names(m) = c("locus", "profile", "dye", "X", "V", "ZST")
 
   bugsInits = list()
 
@@ -473,6 +497,12 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
     bVarEffect = FALSE
   }
 
+  if(!is.na(m["ZST"])){
+    bZST = TRUE
+  }else{
+    bZST = FALSE
+  }
+
 
   return(
     list(
@@ -483,14 +513,16 @@ makeBUGSinputs = function(form = formula("y ~ 1"), data.df, responseDist = c("ga
                                    bProfileEffect = bProfileEffect,
                                    bDyeEffect = bDyeEffect,
                                    bDoseEffect = bDoseEffect,
-                                   bVarEffect = bVarEffect),
+                                   bVarEffect = bVarEffect,
+                                   bZST = bZST),
       responseDist = responseDist,
       modelFormula = form,
       effects = list(bLocusEffect = bLocusEffect,
                      bProfileEffect = bProfileEffect,
                      bDyeEffect = bDyeEffect,
                      bDoseEffect = bDoseEffect,
-                     bVarEffect = bVarEffect)
+                     bVarEffect = bVarEffect),
+      zeroSumTotal = bZST
     )
   )
 }

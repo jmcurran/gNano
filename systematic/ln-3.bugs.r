@@ -32,7 +32,8 @@ model
   tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
+      X[i]
     y[i] ~ dlnorm(mu[i], tau)
     pred[i] ~ dnorm(mu[i], tau)
   }

@@ -32,7 +32,8 @@ model
   tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
+      X[i]
     mu[i] = exp(log.mu[i])
     rate[i] = mu[i] * tau
     shape[i] = mu[i] * rate[i]

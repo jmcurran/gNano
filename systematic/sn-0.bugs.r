@@ -1,7 +1,8 @@
 model
 {
   for (i in 1:N) {
-    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location)/scale, 0, 1) * pnorm(skew * (log.y[i] - location)/scale, 0, 1))
+    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location)/scale, 0, 1) * pnorm(skew * 
+      (log.y[i] - location)/scale, 0, 1))
     spy[i] <- dsn[i]/C
     ones[i] ~ dbern(spy[i])
     
