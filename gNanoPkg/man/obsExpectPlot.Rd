@@ -5,7 +5,7 @@
 \title{Plot the Expected versus Observed or Pred-Res}
 \usage{
 obsExpectPlot(results.df, responseDist = c("g", "ln", "sn"),
-  predRes = FALSE)
+  predRes = FALSE, standardize = FALSE)
 }
 \arguments{
 \item{results.df}{A data frame from the loadResults function}

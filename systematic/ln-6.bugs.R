@@ -1,0 +1,37 @@
+model
+{
+  
+  # alpha is locus effect
+  alpha.tau ~ dgamma(0.001, 0.001)
+  alpha.sigma = 1/sqrt(alpha.tau)
+  for (l in 1:numLoci) {
+    alpha.locus[l] ~ dnorm(0, alpha.tau)
+  }
+  
+  # beta is profile effect
+  beta.tau ~ dgamma(0.001, 0.001)
+  beta.sigma = 1/sqrt(beta.tau)
+  for (p in 1:numProfiles) {
+    beta.profile[p] ~ dnorm(0, beta.tau)
+  }
+  
+  # gamma is dye effect
+  gamma.tau ~ dgamma(0.001, 0.001)
+  gamma.sigma = 1/sqrt(gamma.tau)
+  for (p in 1:numDyes) {
+    gamma.dye[p] ~ dnorm(0, gamma.tau)
+  }
+  
+  Mu ~ dnorm(0, 1e-06)
+  tau0 ~ dgamma(0.001, 0.001)
+  
+  for (i in 1:N) {
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
+      X[i]
+    y[i] ~ dlnorm(mu[i], tau[i])
+    
+    tau[i] = aph[profile[i]] * tau0
+    
+    pred[i] ~ dnorm(mu[i], tau[i])
+  }
+}

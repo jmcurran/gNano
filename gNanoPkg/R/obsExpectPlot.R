@@ -7,7 +7,8 @@
 #' @return a list with the ggplot object and the data used to create the plot
 #' @export
 obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
-                         predRes = FALSE){
+                         predRes = FALSE,
+                         standardize = FALSE){
   gNano.df = readData()
 
   responseDist = match.arg(responseDist)
@@ -31,6 +32,11 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
     upr = results.df %>%
       select(starts_with("pred")) %>%
       summarise_all(function(x)quantile(x, probs = 0.975)) %>%
+      unlist(),
+
+    sigma = results.df %>%
+      select(matches("^tau(\\[[0-9]{1,4}\\])?$")) %>%
+      summarise_all(function(x)1 / sqrt(mean(x))) %>%
       unlist()
   )
 
@@ -50,16 +56,29 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
   }
 
   plot.df = plot.df %>%
-    mutate(residuals = observed - mean)
+    mutate(residuals = observed - mean) %>%
+    mutate(stdResiduals = residuals / sigma)
 
   p = if(predRes){
-        plot.df %>%
-          ggplot(aes(x = mean, y = residuals)) +
-          geom_point() +
-          geom_hline(linetype = "dashed", colour = "grey", alpha = 0.2,
-                     yintercept = 0) +
-          geom_smooth() +
-          xlab("Fitted (posterior mean)")
+        if(standardize){
+          plot.df %>%
+            ggplot(aes(x = mean, y = stdResiduals)) +
+            geom_point() +
+            geom_hline(linetype = "dashed", colour = "grey", alpha = 0.2,
+                       yintercept = 0) +
+            geom_smooth() +
+            xlab("Fitted (posterior mean)") +
+            ylab("Std. Residuals")
+        }else{
+          plot.df %>%
+            ggplot(aes(x = mean, y = residuals)) +
+            geom_point() +
+            geom_hline(linetype = "dashed", colour = "grey", alpha = 0.2,
+                       yintercept = 0) +
+            geom_smooth() +
+            xlab("Fitted (posterior mean)") +
+            ylab("Residuals")
+        }
       }else{
         plot.df %>%
           ggplot(aes(y = mean, x = observed)) +

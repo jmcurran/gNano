@@ -163,7 +163,7 @@ obsExpectPlot(g1.df, "g")
 and a pred-res plot
 
 ```{r}
-obsExpectPlot(g1.df, "g", predRes = TRUE)
+obsExpectPlot(g1.df, "g", predRes = TRUE, TRUE)
 ```
 
 ## Model $g_2$ - locus effects
@@ -247,7 +247,6 @@ plot.df = data.frame(aph = log10(exp(aph)), meanEffect = meanEffect)
 p = plot.df %>% 
   ggplot(aes(x = aph, y = meanEffect)) + 
   geom_point(show.legend = FALSE) +
-  geom_smooth() + 
   xlab(expression(log[10]~(aph))) + 
   ylab(bquote(mean~delta[f])) + 
   theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
@@ -296,7 +295,7 @@ obsExpectPlot(g4.df, "g")
 And the pred-res plot
 
 ```{r}
-g4.predRes = obsExpectPlot(g4.df, "g", TRUE)
+g4.predRes = obsExpectPlot(g4.df, "g", TRUE, TRUE)
 ```
 
 Is it doing anything? 
@@ -646,6 +645,60 @@ No real change here in terms of predicted values
 
 ```{r}
 obsExpectPlot(ln5.df, "ln", TRUE)
+```
+What about change to the log-likelihood?
+
+```{r}
+ln5.ll = calcLogLik(ln5.df, "ln")
+compareLL(ln4.ll, ln5.ll, labels = c("LN-4", "LN-5"))
+```
+
+I think we'd say realistically no. So are the sum constraints being swallowed in the mean?
+
+```{r}
+p = ln5.df %>% 
+  ggplot(aes(x = Mu)) +
+  geom_density()
+p
+```
+
+And I'd say the answer is "yes." I think we should probably just stick with the constraints. I'm happier with them being there than not, and they make more sense.
+
+## Does the removal of sum constraints matter  when the effect means are zero in the prior?
+
+```{r}
+ln6.df = loadResults("ln-6", resultsRoot = resultsRoot)
+```
+
+```{r}
+effectsPlot(ln6.df, "profile")
+```
+
+So this is interesting in that all the profile effects are non-zero. Let's just look at ln4
+
+```{r}
+ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
+effectsPlot(ln4.df, "profile")
+
+```
+
+```{r}
+effectsPlot(ln6.df, "locus")
+```
+Hmm - similar
+
+```{r}
+effectsPlot(ln6.df, "dye")
+```
+Just weird!
+
+```{r}
+obsExpectPlot(ln6.df, "ln")
+```
+No real change here in terms of predicted values
+
+```{r}
+obsExpectPlot(ln6.df, "ln", TRUE)
 ```
 What about change to the log-likelihood?
 
