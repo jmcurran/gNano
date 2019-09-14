@@ -29,7 +29,7 @@ gNano.df = readData()
 Specify where the results are stored relative to the gNano project and this file.
 
 ```{r}
-jamesDuncan = TRUE
+jamesDuncan = FALSE
 
 resultsRoot = if(jamesDuncan){
     "../systematic/"
@@ -717,3 +717,44 @@ p
 ```
 
 And I'd say the answer is "yes." I think we should probably just stick with the constraints. I'm happier with them being there than not, and they make more sense.
+
+
+## Model $sn_4$
+
+chcking out the SN model
+
+```{r}
+sn4.df = loadResults("sn-4", resultsRoot = resultsRoot)
+```
+
+profile
+```{r}
+effectsPlot(sn4.df, "profile")
+```
+
+
+locus
+```{r}
+effectsPlot(sn4.df, "locus")
+```
+
+dye
+```{r}
+effectsPlot(sn4.df, "dye")
+```
+
+obs vs expected
+```{r}
+obsExpectPlot(sn4.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn4.df, "sn", TRUE)
+```
+
+comapre LL with lognormal
+```{r}
+sn4.ll = calcLogLik(sn4.df, "sn")
+compareLL(ln4.ll, sn4.ll, g4.ll, labels = c("LN-4", "SN-4", "G-4"))
+```
