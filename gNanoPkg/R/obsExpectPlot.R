@@ -34,10 +34,17 @@ obsExpectPlot = function(results.df, responseDist = c("g", "ln", "sn"),
       summarise_all(function(x)quantile(x, probs = 0.975)) %>%
       unlist(),
 
-    sigma = results.df %>%
-      select(matches("^tau(\\[[0-9]{1,4}\\])?$")) %>%
-      summarise_all(function(x)1 / sqrt(mean(x))) %>%
-      unlist()
+    sigma = if(responseDist != "sn"){
+      results.df %>%
+        select(matches("^tau(\\[[0-9]{1,4}\\])?$")) %>%
+        summarise_all(function(x)1 / sqrt(mean(x))) %>%
+        unlist()
+    }else{
+      results.df %>%
+        select(matches("^scale(\\[[0-9]{1,4}\\])?$")) %>%
+        summarise_all(function(x)sqrt(mean(x))) %>%
+        unlist()
+    }
   )
 
   o = order(gNano.df$obs)
