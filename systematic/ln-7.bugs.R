@@ -28,12 +28,9 @@ model
   delta.mu ~ dnorm(0, 1e-06)
   delta.tau ~ dgamma(0.001, 0.001)
   delta.sigma = 1/sqrt(delta.tau)
-  
-  for (p in 1:(numLocusDyes - 1)) {
+  for (p in 1:numLocusDyes) {
     delta.locus.dye[p] ~ dnorm(delta.mu, delta.tau)
   }
-  
-  delta.locus.dye[numLocusDyes] = -sum(delta.locus.dye[1:(numLocusDyes - 1)])
   
   Mu ~ dnorm(0, 1e-06)
   tau ~ dgamma(0.001, 0.001)
