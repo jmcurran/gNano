@@ -29,7 +29,7 @@ gNano.df = readData()
 Specify where the results are stored relative to the gNano project and this file.
 
 ```{r}
-jamesDuncan = FALSE
+jamesDuncan = TRUE
 
 resultsRoot = if(jamesDuncan){
     "../systematic/"
@@ -758,3 +758,113 @@ comapre LL with lognormal
 sn4.ll = calcLogLik(sn4.df, "sn")
 compareLL(ln4.ll, sn4.ll, g4.ll, labels = c("LN-4", "SN-4", "G-4"))
 ```
+
+Let's go and do some data analysis:
+```{r}
+data.df = readData()
+hets = data.df %>%
+  filter(X == 0)
+tbl = with(hets, table(loc, dye))
+tbl
+```
+
+On the basis of this I am going to chop out loci where there are fewer than 10 hets - just for plotting
+
+```{r}
+keepLoci = which(rowSums(tbl) >= 10)
+hets = hets %>% 
+  filter(loc %in% keepLoci)
+```
+
+First we'll look at the unpaired differences - i.e. we're ignoring which profile the measurements came from
+
+```{r}
+g = hets %>% 
+  ggplot(aes(y = log10(obs))) +
+  geom_boxplot(aes(group = dye, fill = dye))
+g
+```
+
+So let's look at this locus by locus
+
+```{r}
+g = g + facet_wrap(vars(loc))
+g
+```
+
+So on the whole it looks like the dye effect is consistent. I am going to try and look at the actual paired differences. 
+
+```{r}
+triples = which(apply(tbl, 1, function(row)sum(row == 0)) < 2)
+hets = hets %>% 
+  filter(!(loc %in% triples))
+
+
+het.diff = hets %>% 
+  group_by(prof, loc) %>% 
+  arrange(desc(dye), .by_group = TRUE) %>% 
+  summarise(d = diff(obs))
+
+
+g = het.diff %>% 
+  ggplot(aes(x = d)) + 
+  geom_density() + 
+  geom_vline(xintercept = 0) +
+  facet_wrap(vars(loc))
+g
+```
+Mostly positive differences but let's look at loci 5 and 15
+```{r}
+h515 = hets %>% 
+  filter(loc %in% c(5, 15)) %>% 
+  arrange(prof, loc, dye) %>% 
+  select(prof, loc, dye, obs)
+h515
+```
+
+```{r}
+het.diff.summ = het.diff %>% 
+  ungroup() %>% 
+  group_by(loc) %>% 
+  summarise(mean = mean(d), stdev = sd(d), q25 = quantile(d, 0.025),
+            q975 = quantile(d, 0.975), n = n())
+het.diff.summ
+```
+```{r}
+ln7.df = loadResults("ln-7", resultsRoot = resultsRoot)
+```
+
+dye.locus
+```{r}
+effectsPlot(ln7.df, "locus.dye")
+```
+
+```{r}
+ln7.ll = calcLogLik(ln7.df, "ln")
+compareLL(ln2.ll, ln3.ll, ln4.ll, ln7.ll, labels = paste0("ln-", c(2:4,7)))
+```
+
+```{r}
+obsExpectPlot(ln7.df, "ln")
+```
+```{r}
+obsExpectPlot(ln7.df, "ln", TRUE)
+```
+
+```{r}
+lrt(ln3.ll,ln7.ll, 67)
+```
+
+This is just fooling around looking at the distribution of the differences the log-likelihoods (actually the LRT test-statistic = 2 * diff(L1-L0)). Shows that model 7 is a definite improvement over model 3
+```{r}
+ll = bind_rows(ln3.ll, ln7.ll) %>% 
+  mutate(model = rep(c("ln3","ln7"), c(1000, 1000))) %>% 
+  group_by(rep) %>% 
+  summarise(d = 2 * diff(ll))
+
+g = ll %>% 
+  ggplot(aes(x = d)) +
+  geom_density()
+g
+```
+

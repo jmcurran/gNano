@@ -72,6 +72,11 @@ runSim = function(form, data, simPath, simRoot,
     parameters = c(parameters, "gamma.mu", "gamma.sigma", "gamma.dye")
   }
 
+  if(effects$bLocusDyeEffect){
+    parameters = c(parameters, "delta.mu", "delta.sigma", "delta.locus.dye")
+  }
+
+
   if(effects$bVarEffect & responseDist != "sn"){
     parameters = c(parameters, "tau", "tau0")
   }else{

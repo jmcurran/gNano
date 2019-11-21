@@ -7,7 +7,8 @@
 #' @export
 #'
 #' @examples
-effectsPlot = function(results.df, effect = c("locus", "profile", "dye"),
+effectsPlot = function(results.df, effect = c("locus", "profile", "dye",
+                                              "locus.dye"),
                        xlab = NULL, ylab = NULL){
   effect = match.arg(effect)
 
@@ -15,8 +16,10 @@ effectsPlot = function(results.df, effect = c("locus", "profile", "dye"),
     "alpha"
   }else if(effect == "profile"){
     "beta"
-  }else{
+  }else if(effect == "dye"){
     "gamma"
+  }else{
+    "delta"
   }
 
   if(is.null(xlab)){
