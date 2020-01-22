@@ -29,7 +29,7 @@ gNano.df = readData()
 Specify where the results are stored relative to the gNano project and this file.
 
 ```{r}
-jamesDuncan = TRUE
+jamesDuncan = FALSE
 
 resultsRoot = if(jamesDuncan){
     "../systematic/"
@@ -667,38 +667,38 @@ And I'd say the answer is "yes." I think we should probably just stick with the 
 ## Does the removal of sum constraints matter  when the effect means are zero in the prior?
 
 ```{r}
-ln6.df = loadResults("ln-6", resultsRoot = resultsRoot)
+#ln6.df = loadResults("ln-6", resultsRoot = resultsRoot)
 ```
 
 ```{r}
-effectsPlot(ln6.df, "profile")
+#effectsPlot(ln6.df, "profile")
 ```
 
 So this is interesting in that all the profile effects are non-zero. Let's just look at ln4
 
 ```{r}
-ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
-effectsPlot(ln4.df, "profile")
+#ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
+#effectsPlot(ln4.df, "profile")
 
 ```
 
 ```{r}
-effectsPlot(ln6.df, "locus")
+#effectsPlot(ln6.df, "locus")
 ```
 Hmm - similar
 
 ```{r}
-effectsPlot(ln6.df, "dye")
+#effectsPlot(ln6.df, "dye")
 ```
 Just weird!
 
 ```{r}
-obsExpectPlot(ln6.df, "ln")
+#obsExpectPlot(ln6.df, "ln")
 ```
 No real change here in terms of predicted values
 
 ```{r}
-obsExpectPlot(ln6.df, "ln", TRUE)
+#obsExpectPlot(ln6.df, "ln", TRUE)
 ```
 What about change to the log-likelihood?
 
@@ -866,5 +866,42 @@ g = ll %>%
   ggplot(aes(x = d)) +
   geom_density()
 g
+```
+
+```{r}
+ln8.df = loadResults("ln-8", resultsRoot = resultsRoot)
+obsExpectPlot(ln8.df, "ln")
+```
+
+dye.locus
+```{r}
+effectsPlot(ln8.df, "locus.dye")
+```
+
+dye
+```{r}
+effectsPlot(ln8.df, "dye")
+```
+
+
+locus
+```{r}
+effectsPlot(ln8.df, "locus")
+```
+
+
+```{r}
+ln8.ll = calcLogLik(ln8.df, "ln")
+compareLL(ln2.ll, ln3.ll, ln4.ll, ln7.ll, ln8.ll, labels = paste0("ln-", c(3:7)))
+```
+
+```{r}
+g7.df = loadResults("g-7", resultsRoot = resultsRoot)
+g8.df = loadResults("g-8", resultsRoot = resultsRoot)
+
+g7.ll = calcLogLik(g7.df, "g")
+g8.ll = calcLogLik(g8.df, "g")
+
+compareLL(g2.ll, g3.ll, g4.ll, g7.ll, g8.ll, labels = paste0("g-", c(3:7)))
 ```
 

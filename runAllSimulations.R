@@ -9,7 +9,9 @@ runSim(y~1, data = data.df, simPath = simPath, simRoot = "g-0")
 runSim(y~profile, data = data.df, simPath = simPath, simRoot = "g-1")
 runSim(y~profile + locus, data = data.df, simPath = simPath, simRoot = "g-2")
 runSim(y~profile + locus + dye + X, data = data.df, simPath = simPath, simRoot = "g-3", genInits = TRUE)
-runSim(y~profile + locus + dye + X + V, data = data.df, simPath = simPath, simRoot = "g-4",)
+runSim(y~profile + locus + dye + X + V, data = data.df, simPath = simPath, simRoot = "g-4")
+runSim(y~profile + locus + dye + locus.dye + X, data = data.df, simPath = simPath, simRoot = "g-7")
+runSim(y~profile + locus + dye + locus.dye + X + V, data = data.df, simPath = simPath, simRoot = "g-8")
 
 runSim(y~1, data = data.df, simPath = simPath, simRoot = "ln-0", responseDist = "normal")
 runSim(y~profile, data = data.df, simPath = simPath, simRoot = "ln-1", responseDist = "normal")
@@ -18,6 +20,7 @@ runSim(y~profile + locus + dye + X, data = data.df, simPath = simPath, simRoot =
 runSim(y~profile + locus + dye + X + V, data = data.df, simPath = simPath, simRoot = "ln-4", responseDist = "normal")
 runSim(y~profile + locus + dye + X + V - ZST, data = data.df, simPath = simPath, simRoot = "ln-5", responseDist = "normal")
 runSim(y~profile + locus + dye + locus.dye + X, data = data.df, simPath = simPath, simRoot = "ln-7", responseDist = "normal")
+runSim(y~profile + locus + dye + locus.dye + X + V, data = data.df, simPath = simPath, simRoot = "ln-8", responseDist = "normal")
 
 runSim(y~1, data = data.df, simPath = simPath, simRoot = "sn-0", responseDist = "sn")
 runSim(y~profile, data = data.df, simPath = simPath, simRoot = "sn-1", responseDist = "sn")
