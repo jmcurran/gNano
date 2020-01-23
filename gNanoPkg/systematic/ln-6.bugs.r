@@ -27,24 +27,22 @@ model
     gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
   }
   gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+  # delta is the locus-dye interaction
+  delta.mu ~ dnorm(0, 1e-06)
+  delta.tau ~ dgamma(0.001, 0.001)
+  delta.sigma = 1/sqrt(delta.tau)
+  for (p in 1:(numLocusDyes - 1)) {
+    delta.locus.dye[p] ~ dnorm(delta.mu, delta.tau)
+  }
+  
+  delta.locus.dye[numLocusDyes] = -sum(delta.locus.dye[1:(numLocusDyes - 1)])
   
   Mu ~ dnorm(0, 1e-06)
-  scale ~ dgamma(1.105, 0.105)
-  skew ~ dnorm(0, 0.001)
+  tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    location[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
-      X[i]
-    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location[i])/scale, 0, 1) * pnorm(skew * 
-      (log.y[i] - location[i])/scale, 0, 1))
-    spy[i] <- dsn[i]/C
-    ones[i] ~ dbern(spy[i])
-    
-    u1[i] ~ dnorm(0, 1)
-    u2[i] ~ dnorm(0, 1)
-    
-    z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
-    pred[i] = scale * z[i] + location[i]
-    
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i] + delta.locus.dye[locus.dye[i]]
+    y[i] ~ dlnorm(mu[i], tau)
+    pred[i] ~ dnorm(mu[i], tau)
   }
 }

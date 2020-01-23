@@ -19,22 +19,25 @@ model
   }
   beta.profile[numProfiles] = -sum(beta.profile[1:(numProfiles - 1)])
   
-  Mu ~ dnorm(0, 1e-06)
-  scale ~ dgamma(1.105, 0.105)
-  skew ~ dnorm(0, 0.001)
+  # gamma is profile effect
+  gamma.mu ~ dnorm(0, 1e-06)
+  gamma.tau ~ dgamma(0.001, 0.001)
+  gamma.sigma = 1/sqrt(gamma.tau)
+  for (p in 1:(numDyes - 1)) {
+    gamma.dye[p] ~ dnorm(gamma.mu, gamma.tau)
+  }
+  gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
+  
+  log.Mu ~ dnorm(0, 1e-06)
+  tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    location[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]]
-    dsn[i] <- ((2/scale) * dnorm((log.y[i] - location[i])/scale, 0, 1) * pnorm(skew * 
-      (log.y[i] - location[i])/scale, 0, 1))
-    spy[i] <- dsn[i]/C
-    ones[i] ~ dbern(spy[i])
+    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    mu[i] = exp(log.mu[i])
+    rate[i] = mu[i] * tau
+    shape[i] = mu[i] * rate[i]
     
-    u1[i] ~ dnorm(0, 1)
-    u2[i] ~ dnorm(0, 1)
-    
-    z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
-    pred[i] = scale * z[i] + location[i]
-    
+    y[i] ~ dgamma(shape[i], rate[i])
+    pred[i] ~ dgamma(shape[i], rate[i])
   }
 }

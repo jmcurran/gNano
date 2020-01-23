@@ -38,9 +38,9 @@ resultsRoot = if(jamesDuncan){
   }
 ```
 
-## Model $g_0$ - no effects
-```{r g0, echo=FALSE, fig.cap="Model $g_0$", out.width = '25%'}
-knitr::include_graphics("g0.png")
+## Model $g_1$ - no effects
+```{r g1, echo=FALSE, fig.cap="Model $g_1$", out.width = '25%'}
+knitr::include_graphics("g1.png")
 ```
 
 **Model:**
@@ -60,13 +60,13 @@ Our prior on $\sigma^2$ is $inverse-\Gamma(0.001, 0.001)$, and our prior on $\lo
 First I will load up the results.
 
 ```{r}
-g0.df = loadResults("g-0", resultsRoot = resultsRoot)
+g1.df = loadResults("g-1", resultsRoot = resultsRoot)
 ```
 
 
-I'll do this with ggplot2 so I can teach myself something 
+using ggplot2 
 ```{r}
-p = g0.df %>% 
+p = g1.df %>% 
   ggplot(aes(x = tau)) +
   geom_density()
 p
@@ -75,14 +75,14 @@ p
 We want plots of shape and rate.
 
 ```{r}
-p = g0.df %>% 
+p = g1.df %>% 
   ggplot(aes(x = shape))+
   geom_density()
 p
 ```
 
 ```{r}
-p = g0.df %>% 
+p = g1.df %>% 
   ggplot(aes(x = rate))+
   geom_density()
 p
@@ -90,8 +90,8 @@ p
 
 
 ```{r}
-rateDensity = density(g0.df$rate)
-shapeDensity = density(g0.df$shape)
+rateDensity = density(g1.df$rate)
+shapeDensity = density(g1.df$shape)
 
 rateMode = rateDensity$x[which.max(rateDensity$y)]
 shapeMode = shapeDensity$x[which.max(shapeDensity$y)]
@@ -109,26 +109,26 @@ p
 Plot the expected vs the observed peak heights
 
 ```{r}
-obsExpectPlot(g0.df, "g")
+obsExpectPlot(g1.df, "g")
 ```
 
 
-## Model $g_1$ - profile effects
-```{r g1, echo=FALSE, fig.cap="Model $g_1$", out.width = '25%'}
-knitr::include_graphics("g1.png")
+## Model $g_2$ - profile effects
+```{r g2, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
+knitr::include_graphics("g2.png")
 ```
 
 Let's have a look at the profile effects. I like to use error bar plots 
 ```{r}
-g1.df = loadResults("g-1", resultsRoot = resultsRoot)
+g2.df = loadResults("g-2", resultsRoot = resultsRoot)
 ```
 
 
-This code is not elegant, and is probably stupid but then so is the tidyverse a lot of the time :-)
 ```{r}
-effectsPlot(g1.df, "profile")
+effectsPlot(g2.df, "profile")
 ```
 
+here is how the profile effects relate to the average peak heights (we would expect a correlation as long as modelling is sensible)
 ```{r}
 aph = gNano.df %>% 
   group_by(prof) %>% 
@@ -136,7 +136,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = g1.df %>% 
+meanEffect = g2.df %>% 
   select(starts_with("beta.profile")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -157,36 +157,36 @@ p
 Plot the expected vs the observed peak heights
 
 ```{r}
-obsExpectPlot(g1.df, "g")
+obsExpectPlot(g2.df, "g")
 ```
 
 and a pred-res plot
 
 ```{r}
-obsExpectPlot(g1.df, "g", predRes = TRUE, TRUE)
+obsExpectPlot(g2.df, "g", predRes = TRUE, TRUE)
 ```
 
-## Model $g_2$ - locus effects
-```{r g2, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
-knitr::include_graphics("g2.png")
+## Model $g_3$ - locus effects
+```{r g3, echo=FALSE, fig.cap="Model $g_3$", out.width = '25%'}
+knitr::include_graphics("g3.png")
 ```
 
 ```{r}
-g2.df = loadResults("g-2", resultsRoot = resultsRoot)
+g3.df = loadResults("g-3", resultsRoot = resultsRoot)
 
-effectsPlot(g2.df, "locus")
+effectsPlot(g3.df, "locus")
 ```
 
 Plot the expected vs observed peak heights
 
 ```{r}
-obsExpectPlot(g2.df, "g")
+obsExpectPlot(g3.df, "g")
 ```
 
 and the pred-res plot
 
 ```{r}
-obsExpectPlot(g2.df, "g", TRUE)
+obsExpectPlot(g3.df, "g", TRUE)
 ```
 
 
@@ -199,7 +199,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = g2.df %>% 
+meanEffect = g3.df %>% 
   select(starts_with("alpha.locus")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -215,21 +215,21 @@ p = plot.df %>%
 p
 ```
 
-## Model $g_3$ - all other effects except extra variance
-```{r g3, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
-knitr::include_graphics("g3.png")
+## Model $g_4$ - all other effects except extra variance
+```{r g4, echo=FALSE, fig.cap="Model $g_4$", out.width = '25%'}
+knitr::include_graphics("g4.png")
 ```
 
 Dye effects
 
 ```{r}
-g3.df = loadResults("g-3", resultsRoot = resultsRoot)
+g4.df = loadResults("g-4", resultsRoot = resultsRoot)
 
-effectsPlot(g3.df, "dye")
+effectsPlot(g4.df, "dye")
 ```
 
 
-Plot the dye effects by Average Peak Height - no fitted line here because with four points who cares:
+Plot the dye effects by Average Peak Height - no fitted line here because with four points:
 
 ```{r}
 aph = gNano.df %>% 
@@ -238,7 +238,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = g3.df %>% 
+meanEffect = g4.df %>% 
   select(starts_with("gamma.dye")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -256,28 +256,28 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-obsExpectPlot(g3.df, "g")
+obsExpectPlot(g4.df, "g")
 ```
 and the pred-res plot
 
 ```{r}
-g3.predRes = obsExpectPlot(g3.df, "g", TRUE)
+g4.predRes = obsExpectPlot(g4.df, "g", TRUE)
 ```
 
-## Model $g_4$ - extra variance
-```{r g4, echo=FALSE, fig.cap="Model $g_2$", out.width = '25%'}
-#knitr::include_graphics("g3.png")
+## Model $g_5$ - extra variance
+```{r g5, echo=FALSE, fig.cap="Model $g_5$", out.width = '25%'}
+#knitr::include_graphics("g4.png")
 ```
 
 Is the added variance being used?
 
 ```{r}
-g4.df = loadResults("g-4", resultsRoot = resultsRoot)
+g5.df = loadResults("g-5", resultsRoot = resultsRoot)
 
-g4.df = g4.df %>% 
+g5.df = g5.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
 
-p = g4.df %>% 
+p = g5.df %>% 
   ggplot(aes(x = sigma.sq0/10^6)) +
   geom_density() +
   geom_vline(xintercept = quantile(g4.df$sigma.sq0/10^6, probs=0.025)) +
@@ -290,96 +290,41 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-obsExpectPlot(g4.df, "g")
+obsExpectPlot(g5.df, "g")
 ```
 And the pred-res plot
 
 ```{r}
-g4.predRes = obsExpectPlot(g4.df, "g", TRUE, TRUE)
+g5.predRes = obsExpectPlot(g5.df, "g", TRUE, TRUE)
 ```
 
-Is it doing anything? 
+Is the extra variance term doing anything to the expected peak heights? 
 
 ```{r}
 plot.df = data.frame(
-  expected.g3 = g3.predRes$plot.df$mean,
-  expected.g4 = g4.predRes$plot.df$mean
+  expected.g4 = g4.predRes$plot.df$mean,
+  expected.g5 = g5.predRes$plot.df$mean
 )
 p = plot.df %>% 
-  ggplot(aes(x = expected.g3, y = expected.g4)) +
+  ggplot(aes(x = expected.g4, y = expected.g5)) +
            geom_point() +
            geom_abline(aes(intercept = 0, slope = 1)) + 
           xlim(1, 5) +
           ylim(1, 5)
 p
 ```
-
-I think it's doing what it is supposed to. 
-
-Let's try and look at the expected values slightly differently. I will work with the summary stats rather than the raw data
-
-```{r}
-simSummary = loadResults("g-3", resultsRoot = resultsRoot, summary = TRUE)
-
-g3.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
-  select(starts_with("pred"))  %>%
-   rownames_to_column %>% 
-   gather(var, value, -rowname) %>% 
-   spread(rowname, value) %>% 
-  mutate(var = as.numeric(gsub("^pred\\[([0-9]+)\\]$", "\\1", var))) %>% 
-  arrange(var)
-
-g3.stats = as.data.frame(t(simSummary$statistics)) %>% 
-  select(starts_with("pred"))  %>%
-   rownames_to_column %>% 
-   gather(var, value, -rowname) %>% 
-   spread(rowname, value) %>% 
-  mutate(var = as.numeric(gsub("^pred\\[([0-9]+)\\]$", "\\1", var))) %>% 
-  arrange(var)
-
-
-
-simSummary = loadResults("g-4", resultsRoot = resultsRoot, summary = TRUE)
-
-g4.quantiles = as.data.frame(t(simSummary$quantiles)) %>% 
-    select(starts_with("pred"))  %>%
-   rownames_to_column %>% 
-   gather(var, value, -rowname) %>% 
-   spread(rowname, value)  %>% 
-  mutate(var = as.numeric(gsub("^pred\\[([0-9]+)\\]$", "\\1", var))) %>% 
-  arrange(var)
-
-plot.df = bind_rows(g3.quantiles, g4.quantiles) %>% 
-  mutate(model = rep(c("g3", "g4"), rep(nrow(g3.quantiles), 2))) %>% 
-  mutate(obs = rep(gNano.df$obs, 2)) %>% 
-  rename(med = `50%`, lb = `2.5%`, ub = `97.5%`) %>% 
-  select(obs, model, lb, med, ub) %>% 
-  arrange(obs)
-
-
-p = plot.df %>% 
-  ggplot(aes(x = log10(obs), y = log10(med))) +
-  facet_grid(vars(model)) +
-    geom_abline(aes(intercept = 0, slope = 1)) +
-    xlim(1, 5) +
-    ylim(1, 5) +
-  geom_point(show.legend = FALSE) + 
-  geom_smooth() +
-  geom_line(aes(y = log10(lb)), col = "green") + geom_line(aes(y = log10(ub)), col = "red")
-p
-```
-
+It appears to have no real effect on expected peak height
 
 Now we move on the the log normal models
 
-## Model $ln_0$ - no effects
+## Model $ln_1$ - no effects
 
 Tau
 
 ```{r}
-ln0.df = loadResults("ln-0", resultsRoot = resultsRoot)
+ln1.df = loadResults("ln-1", resultsRoot = resultsRoot)
 
-p = ln0.df %>% 
+p = ln1.df %>% 
   ggplot(aes(x = tau)) +
   geom_density()
 p
@@ -388,7 +333,7 @@ p
 Mu
 
 ```{r}
-p = ln0.df %>% 
+p = ln1.df %>% 
   ggplot(aes(x = Mu)) +
   geom_density()
 p
@@ -397,26 +342,26 @@ p
 Comparing expected and observed peak heights
 
 ```{r}
-obsExpectPlot(ln0.df, "ln")
+obsExpectPlot(ln1.df, "ln")
 ```
 and the pred-res plot
 
 ```{r}
-obsExpectPlot(ln0.df, "ln", TRUE)
+obsExpectPlot(ln1.df, "ln", TRUE)
 ```
 
-## Model $ln_1$ - profile effects
+## Model $ln_2$ - profile effects
 
 Load the data
 
 ```{r}
-ln1.df = loadResults("ln-1", resultsRoot = resultsRoot)
+ln2.df = loadResults("ln-2", resultsRoot = resultsRoot)
 ```
 
 Showing the per profile effects
 
 ```{r}
-effectsPlot(ln1.df, "profile")
+effectsPlot(ln2.df, "profile")
 ```
 
 Now showing the relationship between profile aph and profile effects from model
@@ -428,7 +373,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = ln1.df %>% 
+meanEffect = ln2.df %>% 
   select(starts_with("beta.profile")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -447,28 +392,28 @@ p
 Plotting observed vs expected peak heights
 
 ```{r}
-obsExpectPlot(ln1.df, "ln")
+obsExpectPlot(ln2.df, "ln")
 ```
 and the pred-res plot
 
 ```{r}
-obsExpectPlot(ln1.df, "ln", TRUE)
+obsExpectPlot(ln2.df, "ln", TRUE)
 ```
-## Model $ln_2$ - locus effects
+## Model $ln_3$ - locus effects
 
 ```{r}
-ln2.df = loadResults("ln-2", resultsRoot = resultsRoot)
+ln3.df = loadResults("ln-3", resultsRoot = resultsRoot)
 
-effectsPlot(ln2.df, "locus")
+effectsPlot(ln3.df, "locus")
 ```
 
 Plot the expected vs observed peak heights
 ```{r}
-obsExpectPlot(ln2.df, "ln")
+obsExpectPlot(ln3.df, "ln")
 ```
 and the pred-res
 ```{r}
-obsExpectPlot(ln2.df, "ln", TRUE)
+obsExpectPlot(ln3.df, "ln", TRUE)
 ```
 
 
@@ -481,7 +426,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = ln2.df %>% 
+meanEffect = ln3.df %>% 
   select(starts_with("alpha.locus")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -497,13 +442,13 @@ p = plot.df %>%
 p
 ```
 
-## Model $ln_3$ - all other effects except extra variance
+## Model $ln_4$ - all other effects except extra variance
 
 Dye effects
 
 ```{r}
-ln3.df = loadResults("ln-3", resultsRoot = resultsRoot)
-effectsPlot(ln3.df, "dye")
+ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
+effectsPlot(ln4.df, "dye")
 ```
 
 Plot the dye effects by Average Peak Height - no fitted line here because with four points who cares:
@@ -515,7 +460,7 @@ aph = gNano.df %>%
   pull(aph)
 
 
-meanEffect = ln3.df %>% 
+meanEffect = ln4.df %>% 
   select(starts_with("gamma.dye")) %>% 
   summarise_all(mean, na.rm = TRUE) %>% 
   unlist()
@@ -534,28 +479,28 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-obsExpectPlot(ln3.df, "ln")
+obsExpectPlot(ln4.df, "ln")
 ```
 and the pred-res
 ```{r}
-obsExpectPlot(ln3.df, "ln", TRUE)
+obsExpectPlot(ln4.df, "ln", TRUE)
 ```
 
-## Model $ln_4$ - extra variance
+## Model $ln_5$ - extra variance
 
 Is the added variance being used?
 
 ```{r}
-ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
+ln5.df = loadResults("ln-5", resultsRoot = resultsRoot)
 
-ln4.df = ln4.df %>% 
+ln5.df = ln5.df %>% 
   mutate(sigma.sq0 = 1 / tau0)
 
-p = ln4.df %>% 
+p = ln5.df %>% 
   ggplot(aes(x = sigma.sq0)) +
   geom_density() +
-  geom_vline(xintercept = quantile(ln4.df$sigma.sq0, probs=0.025)) +
-  geom_vline(xintercept = quantile(ln4.df$sigma.sq0, probs=0.975)) +
+  geom_vline(xintercept = quantile(ln5.df$sigma.sq0, probs=0.025)) +
+  geom_vline(xintercept = quantile(ln5.df$sigma.sq0, probs=0.975)) +
   xlab(bquote(sigma[0]^2)) + 
   theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
@@ -564,159 +509,72 @@ p
 Plot the expected vs observed peak heights
 
 ```{r}
-obsExpectPlot(ln4.df, "ln")
+obsExpectPlot(ln5.df, "ln")
 ```
 And the pred-res
 
 ```{r}
-obsExpectPlot(ln4.df, "ln", TRUE)
-```
-Compare the dlog(likelihoods) for the log-normal model 4 vs the gamma model 4
-
-```{r}
-ln4.ll = calcLogLik(ln4.df, "ln")
-g4.ll = calcLogLik(g4.df, "g")
-compareLL(ln4.ll, g4.ll, labels = c("LN-4", "G-4"))
-```
-
-
-Comparing the g3 model and the g4 model
-```{r}
-g3.ll = calcLogLik(g3.df, "g")
-compareLL(g3.ll, g4.ll, labels = c("G-3", "G-4"))
-```
-
-Compare the ln3 and ln4 models
-
-```{r}
-ln3.ll = calcLogLik(ln3.df, "ln")
-compareLL(ln3.ll, ln4.ll, labels = c("LN-3", "LN-4"))
-```
-
-Compare all the ln models at once:
-
-```{r}
-ln0.ll = calcLogLik(ln0.df, "ln")
-ln1.ll = calcLogLik(ln1.df, "ln")
-ln2.ll = calcLogLik(ln2.df, "ln")
-compareLL(ln0.ll, ln1.ll, ln2.ll, ln3.ll, ln4.ll,
-          labels = paste0("LN-", 0:4))
-```
-LN-0 kind of distorts this so, let's drop it.
-
-```{r}
-compareLL(ln1.ll, ln2.ll, ln3.ll, ln4.ll,
-          labels = paste0("LN-", 1:4))
-```
-So no real value in the variance model. Definite gains in adding in dye and locus effects (and profile, but we don't care about those).
-
-
-## Does the removal of sum constraints matter?
-
-```{r}
-ln5.df = loadResults("ln-5", resultsRoot = resultsRoot)
-```
-
-```{r}
-effectsPlot(ln5.df, "profile")
-```
-
-So this is interesting in that all the profile effects are non-zero. Let's just look at ln4
-
-```{r}
-effectsPlot(ln4.df, "profile")
-
-```
-
-```{r}
-effectsPlot(ln5.df, "locus")
-```
-Hmm - similar
-
-```{r}
-effectsPlot(ln5.df, "dye")
-```
-And this too - all positive
-
-```{r}
-obsExpectPlot(ln5.df, "ln")
-```
-No real change here in terms of predicted values
-
-```{r}
 obsExpectPlot(ln5.df, "ln", TRUE)
 ```
-What about change to the log-likelihood?
+
+## Model $ln_6$ - adding locus and dye interaction term
+
 
 ```{r}
-ln5.ll = calcLogLik(ln5.df, "ln")
-compareLL(ln4.ll, ln5.ll, labels = c("LN-4", "LN-5"))
+ln6.df = loadResults("ln-6", resultsRoot = resultsRoot)
 ```
 
-I think we'd say realistically no. So are the sum constraints being swallowed in the mean?
+dye.locus
+```{r}
+effectsPlot(ln7.df, "locus.dye")
+```
+
+
+observed vs expected
+```{r}
+obsExpectPlot(ln7.df, "ln")
+```
+
+and the pred-res
+```{r}
+obsExpectPlot(ln7.df, "ln", TRUE)
+```
+
+
+
+## Model $ln_7$ - extra variance on model 6
+
 
 ```{r}
-p = ln5.df %>% 
-  ggplot(aes(x = Mu)) +
-  geom_density()
+ln7.df = loadResults("ln-7", resultsRoot = resultsRoot)
+```
+
+Is the added variance being used?
+
+```{r}
+ln7.df = ln7.df %>% 
+  mutate(sigma.sq0 = 1 / tau0)
+
+p = ln7.df %>% 
+  ggplot(aes(x = sigma.sq0)) +
+  geom_density() +
+  geom_vline(xintercept = quantile(ln7.df$sigma.sq0, probs=0.025)) +
+  geom_vline(xintercept = quantile(ln7.df$sigma.sq0, probs=0.975)) +
+  xlab(bquote(sigma[0]^2)) + 
+  theme(text = element_text(size = 20), aspect.ratio = 1, plot.background = element_rect(color="black"))
 p
 ```
 
-And I'd say the answer is "yes." I think we should probably just stick with the constraints. I'm happier with them being there than not, and they make more sense.
-
-## Does the removal of sum constraints matter  when the effect means are zero in the prior?
-
+observed vs expected
 ```{r}
-#ln6.df = loadResults("ln-6", resultsRoot = resultsRoot)
+obsExpectPlot(ln7.df, "ln")
 ```
 
+and the pred-res
 ```{r}
-#effectsPlot(ln6.df, "profile")
+obsExpectPlot(ln7.df, "ln", TRUE)
 ```
 
-So this is interesting in that all the profile effects are non-zero. Let's just look at ln4
-
-```{r}
-#ln4.df = loadResults("ln-4", resultsRoot = resultsRoot)
-#effectsPlot(ln4.df, "profile")
-
-```
-
-```{r}
-#effectsPlot(ln6.df, "locus")
-```
-Hmm - similar
-
-```{r}
-#effectsPlot(ln6.df, "dye")
-```
-Just weird!
-
-```{r}
-#obsExpectPlot(ln6.df, "ln")
-```
-No real change here in terms of predicted values
-
-```{r}
-#obsExpectPlot(ln6.df, "ln", TRUE)
-```
-What about change to the log-likelihood?
-
-```{r}
-ln5.ll = calcLogLik(ln5.df, "ln")
-compareLL(ln4.ll, ln5.ll, labels = c("LN-4", "LN-5"))
-```
-
-I think we'd say realistically no. So are the sum constraints being swallowed in the mean?
-
-```{r}
-p = ln5.df %>% 
-  ggplot(aes(x = Mu)) +
-  geom_density()
-p
-```
-
-And I'd say the answer is "yes." I think we should probably just stick with the constraints. I'm happier with them being there than not, and they make more sense.
 
 
 ## Model $sn_4$
@@ -830,25 +688,11 @@ het.diff.summ = het.diff %>%
             q975 = quantile(d, 0.975), n = n())
 het.diff.summ
 ```
-```{r}
-ln7.df = loadResults("ln-7", resultsRoot = resultsRoot)
-```
 
-dye.locus
-```{r}
-effectsPlot(ln7.df, "locus.dye")
-```
 
 ```{r}
 ln7.ll = calcLogLik(ln7.df, "ln")
 compareLL(ln2.ll, ln3.ll, ln4.ll, ln7.ll, labels = paste0("ln-", c(2:4,7)))
-```
-
-```{r}
-obsExpectPlot(ln7.df, "ln")
-```
-```{r}
-obsExpectPlot(ln7.df, "ln", TRUE)
 ```
 
 ```{r}
@@ -901,6 +745,8 @@ g8.df = loadResults("g-8", resultsRoot = resultsRoot)
 
 g7.ll = calcLogLik(g7.df, "g")
 g8.ll = calcLogLik(g8.df, "g")
+
+g2.ll = calcLogLik(g2.df, "g")
 
 compareLL(g2.ll, g3.ll, g4.ll, g7.ll, g8.ll, labels = paste0("g-", c(3:7)))
 ```

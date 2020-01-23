@@ -29,15 +29,11 @@ model
   gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
   
   Mu ~ dnorm(0, 1e-06)
-  tau0 ~ dgamma(0.001, 0.001)
+  tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
-      X[i]
-    y[i] ~ dlnorm(mu[i], tau[i])
-    
-    tau[i] = aph[profile[i]] * tau0
-    
-    pred[i] ~ dnorm(mu[i], tau[i])
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    y[i] ~ dlnorm(mu[i], tau)
+    pred[i] ~ dnorm(mu[i], tau)
   }
 }

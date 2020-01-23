@@ -37,12 +37,16 @@ model
   
   delta.locus.dye[numLocusDyes] = -sum(delta.locus.dye[1:(numLocusDyes - 1)])
   
-  Mu ~ dnorm(0, 1e-06)
+  log.Mu ~ dnorm(0, 1e-06)
   tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i] + delta.locus.dye[locus.dye[i]]
-    y[i] ~ dlnorm(mu[i], tau)
-    pred[i] ~ dnorm(mu[i], tau)
+    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + delta.locus.dye[locus.dye[i]] + X[i]
+    mu[i] = exp(log.mu[i])
+    rate[i] = mu[i] * tau
+    shape[i] = mu[i] * rate[i]
+    
+    y[i] ~ dgamma(shape[i], rate[i])
+    pred[i] ~ dgamma(shape[i], rate[i])
   }
 }

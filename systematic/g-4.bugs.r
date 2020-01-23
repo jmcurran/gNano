@@ -29,15 +29,12 @@ model
   gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
   
   log.Mu ~ dnorm(0, 1e-06)
-  tau0 ~ dgamma(0.001, 0.001)
+  tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
-      X[i]
+    log.mu[i] = log.Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
     mu[i] = exp(log.mu[i])
-    
-    tau[i] = aph[profile[i]] * tau0
-    rate[i] = mu[i] * tau[i]
+    rate[i] = mu[i] * tau
     shape[i] = mu[i] * rate[i]
     
     y[i] ~ dgamma(shape[i], rate[i])

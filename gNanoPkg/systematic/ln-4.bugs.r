@@ -29,23 +29,11 @@ model
   gamma.dye[numDyes] = -sum(gamma.dye[1:(numDyes - 1)])
   
   Mu ~ dnorm(0, 1e-06)
-  scale0 ~ dgamma(1.105, 0.105)
-  skew ~ dnorm(0, 0.001)
+  tau ~ dgamma(0.001, 0.001)
   
   for (i in 1:N) {
-    location[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + 
-      X[i]
-    dsn[i] <- ((2/scale[i]) * dnorm((log.y[i] - location[i])/scale[i], 0, 1) * 
-      pnorm(skew * (log.y[i] - location[i])/scale[i], 0, 1))
-    spy[i] <- dsn[i]/C
-    ones[i] ~ dbern(spy[i])
-    scale[i] <- scale0/aph[profile[i]]
-    
-    
-    u1[i] ~ dnorm(0, 1)
-    u2[i] ~ dnorm(0, 1)
-    
-    z[i] = ifelse(u2[i] < skew * u1[i], u1[i], -u1[i])
-    pred[i] = scale[i] * z[i] + location[i]
+    mu[i] = Mu + alpha.locus[locus[i]] + beta.profile[profile[i]] + gamma.dye[dye[i]] + X[i]
+    y[i] ~ dlnorm(mu[i], tau)
+    pred[i] ~ dnorm(mu[i], tau)
   }
 }
