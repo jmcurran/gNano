@@ -287,6 +287,7 @@ p = g5.df %>%
 p
 ```
 
+
 Plot the expected vs observed peak heights
 
 ```{r}
@@ -314,6 +315,50 @@ p = plot.df %>%
 p
 ```
 It appears to have no real effect on expected peak height
+
+## Model $g_6$ - dye and locus interaction
+
+```{r}
+g6.df = loadResults("g-6", resultsRoot = resultsRoot)
+```
+
+dye.locus
+```{r}
+effectsPlot(g6.df, "locus.dye")
+```
+
+Plot the expected vs observed peak heights
+
+```{r}
+obsExpectPlot(g6.df, "g")
+```
+
+And the pred-res plot
+
+```{r}
+g6.predRes = obsExpectPlot(g6.df, "g", TRUE, TRUE)
+```
+
+
+## Model $g_7$ - extra variance
+
+```{r}
+g7.df = loadResults("g-7", resultsRoot = resultsRoot)
+```
+
+
+Plot the expected vs observed peak heights
+
+```{r}
+obsExpectPlot(g7.df, "g")
+```
+
+And the pred-res plot
+
+```{r}
+g7.predRes = obsExpectPlot(g7.df, "g", TRUE, TRUE)
+```
+
 
 Now we move on the the log normal models
 
@@ -576,6 +621,73 @@ obsExpectPlot(ln7.df, "ln", TRUE)
 ```
 
 
+## Model $sn_1$
+
+chcking out the SN model
+
+```{r}
+sn1.df = loadResults("sn-1", resultsRoot = resultsRoot)
+```
+
+obs vs expected
+```{r}
+obsExpectPlot(sn1.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn1.df, "sn", TRUE)
+```
+
+
+## Model $sn_2$
+
+chcking out the SN model
+
+```{r}
+sn2.df = loadResults("sn-2", resultsRoot = resultsRoot)
+```
+
+profile
+```{r}
+effectsPlot(sn2.df, "profile")
+```
+
+
+obs vs expected
+```{r}
+obsExpectPlot(sn2.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn2.df, "sn", TRUE)
+```
+
+
+## Model $sn_3$
+
+chcking out the SN model
+
+```{r}
+sn3.df = loadResults("sn-3", resultsRoot = resultsRoot)
+```
+
+locus
+```{r}
+effectsPlot(sn3.df, "locus")
+```
+
+obs vs expected
+```{r}
+obsExpectPlot(sn3.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn3.df, "sn", TRUE)
+```
+
 
 ## Model $sn_4$
 
@@ -583,17 +695,6 @@ chcking out the SN model
 
 ```{r}
 sn4.df = loadResults("sn-4", resultsRoot = resultsRoot)
-```
-
-profile
-```{r}
-effectsPlot(sn4.df, "profile")
-```
-
-
-locus
-```{r}
-effectsPlot(sn4.df, "locus")
 ```
 
 dye
@@ -611,11 +712,113 @@ residuals
 obsExpectPlot(sn4.df, "sn", TRUE)
 ```
 
-comapre LL with lognormal
+## Model $sn_5$
+
+chcking out the SN model
+
 ```{r}
-sn4.ll = calcLogLik(sn4.df, "sn")
-compareLL(ln4.ll, sn4.ll, g4.ll, labels = c("LN-4", "SN-4", "G-4"))
+sn5.df = loadResults("sn-5", resultsRoot = resultsRoot)
 ```
+
+obs vs expected
+```{r}
+obsExpectPlot(sn5.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn5.df, "sn", TRUE)
+```
+
+## Model $sn_6$
+
+chcking out the SN model
+
+```{r}
+sn6.df = loadResults("sn-6", resultsRoot = resultsRoot)
+```
+
+
+locus.dye
+```{r}
+effectsPlot(sn6.df, "locus.dye")
+```
+
+
+obs vs expected
+```{r}
+obsExpectPlot(sn6.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn6.df, "sn", TRUE)
+```
+
+## Model $sn_7$
+
+chcking out the SN model
+
+```{r}
+sn7.df = loadResults("sn-7", resultsRoot = resultsRoot)
+```
+
+obs vs expected
+```{r}
+obsExpectPlot(sn7.df, "sn")
+```
+
+residuals
+```{r}
+obsExpectPlot(sn7.df, "sn", TRUE)
+```
+
+
+
+
+## Comparing the models to each other
+
+
+comapre LL between gamma, lognormal, and skewed normal for models 3 to 7
+first calculate all the logLiks
+
+```{r}
+g3.ll = calcLogLik(g3.df, "g")
+g4.ll = calcLogLik(g4.df, "g")
+g5.ll = calcLogLik(g5.df, "g")
+g6.ll = calcLogLik(g6.df, "g")
+g7.ll = calcLogLik(g7.df, "g")
+
+ln3.ll = calcLogLik(ln3.df, "ln")
+ln4.ll = calcLogLik(ln4.df, "ln")
+ln5.ll = calcLogLik(ln5.df, "ln")
+ln6.ll = calcLogLik(ln6.df, "ln")
+ln7.ll = calcLogLik(ln7.df, "ln")
+
+sn3.ll = calcLogLik(sn3.df, "sn")
+sn4.ll = calcLogLik(sn4.df, "sn")
+sn5.ll = calcLogLik(sn5.df, "sn")
+sn6.ll = calcLogLik(sn6.df, "sn")
+sn7.ll = calcLogLik(sn7.df, "sn")
+```
+
+now compare gammas
+```{r}
+compareLL(g3.ll, g4.ll, g5.ll, g6.ll, g7.ll, labels = paste0("g-", c(3:7)))
+```
+lognormals
+```{r}
+compareLL(ln3.ll, ln4.ll, ln5.ll, ln6.ll, ln7.ll, labels = paste0("LN-", c(3:7)))
+```
+skewed normals
+```{r}
+compareLL(sn3.ll, sn4.ll, sn5.ll, sn6.ll, sn7.ll, labels = paste0("SN-", c(3:7)))
+```
+
+
+##DUNCAN UP TO HERE - REMAINDER IS MISCELLASIOUS STUFF
+
+
 
 Let's go and do some data analysis:
 ```{r}
@@ -689,12 +892,6 @@ het.diff.summ = het.diff %>%
 het.diff.summ
 ```
 
-
-```{r}
-ln7.ll = calcLogLik(ln7.df, "ln")
-compareLL(ln2.ll, ln3.ll, ln4.ll, ln7.ll, labels = paste0("ln-", c(2:4,7)))
-```
-
 ```{r}
 lrt(ln3.ll,ln7.ll, 67)
 ```
@@ -711,43 +908,3 @@ g = ll %>%
   geom_density()
 g
 ```
-
-```{r}
-ln8.df = loadResults("ln-8", resultsRoot = resultsRoot)
-obsExpectPlot(ln8.df, "ln")
-```
-
-dye.locus
-```{r}
-effectsPlot(ln8.df, "locus.dye")
-```
-
-dye
-```{r}
-effectsPlot(ln8.df, "dye")
-```
-
-
-locus
-```{r}
-effectsPlot(ln8.df, "locus")
-```
-
-
-```{r}
-ln8.ll = calcLogLik(ln8.df, "ln")
-compareLL(ln2.ll, ln3.ll, ln4.ll, ln7.ll, ln8.ll, labels = paste0("ln-", c(3:7)))
-```
-
-```{r}
-g7.df = loadResults("g-7", resultsRoot = resultsRoot)
-g8.df = loadResults("g-8", resultsRoot = resultsRoot)
-
-g7.ll = calcLogLik(g7.df, "g")
-g8.ll = calcLogLik(g8.df, "g")
-
-g2.ll = calcLogLik(g2.df, "g")
-
-compareLL(g2.ll, g3.ll, g4.ll, g7.ll, g8.ll, labels = paste0("g-", c(3:7)))
-```
-

@@ -11,9 +11,9 @@
 #' @export
 #'
 #' @examples
-loadResults = function(model = c(paste0("g-",0:8),
-                                 paste0("ln-",0:9),
-                                 paste0("sn-",0:4)),
+loadResults = function(model = c(paste0("g-",1:7),
+                                 paste0("ln-",1:7),
+                                 paste0("sn-",1:7)),
                        resultsRoot = "../systematic/",
                        summary = FALSE){
 
